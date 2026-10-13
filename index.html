@@ -220,7 +220,7 @@
         <h2>Регистрация водителя</h2>
         <div class="step-indicator" id="step-indicator">Шаг 1 из 10</div>
 
-        <!-- ШАГ 1: Основные данные -->
+        <!-- ШАГ 1: Основные данные (без времени прибытия) -->
         <div class="step-container active" id="step-1">
             <div class="form-group">
                 <label>ФИО водителя:</label>
@@ -238,14 +238,10 @@
                 <label>Государственный номер:</label>
                 <input type="text" id="driver-number" placeholder="А123ВС63">
             </div>
-            <div class="form-group">
-                <label>Примерное время прибытия (минут):</label>
-                <input type="number" id="driver-eta" placeholder="Например: 7" min="1" max="60">
-            </div>
             <button class="main-btn" onclick="nextStep(2)">Далее →</button>
         </div>
 
-        <!-- ШАГ 2: Селфи водителя (фронтальная камера) -->
+        <!-- ШАГ 2: Селфи водителя -->
         <div class="step-container" id="step-2">
             <label>Сделайте селфи (фото вашего лица для профиля):</label>
             <label class="camera-btn">
@@ -558,7 +554,6 @@
             let phone = document.getElementById('driver-phone').value;
             let car = document.getElementById('driver-car').value;
             let carNumber = document.getElementById('driver-number').value;
-            let eta = document.getElementById('driver-eta').value || '5';
 
             let data = {
                 action: 'driver_registration',
@@ -566,7 +561,6 @@
                 phone: phone,
                 car: car,
                 carNumber: carNumber,
-                eta: eta + ' мин.',
                 rating: 5.00
             };
 
