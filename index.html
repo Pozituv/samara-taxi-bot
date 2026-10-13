@@ -24,7 +24,6 @@
             margin: 0;
             padding: 16px;
             box-sizing: border-box;
-            /* Разрешаем стандартное поведение для нормального вызова клавиатуры */
             -webkit-user-select: text;
             user-select: text;
         }
@@ -68,7 +67,7 @@
             border: 1px solid var(--card-bg);
             background: var(--card-bg);
             color: var(--text-color);
-            font-size: 16px; /* 16px предотвращает автозум на iOS и гарантирует фокус */
+            font-size: 16px;
             box-sizing: border-box;
             outline: none;
             -webkit-appearance: none;
@@ -103,7 +102,7 @@
             border: 1px dashed var(--hint-color);
         }
 
-        /* Кнопка действия */
+        /* Кнопки действия */
         button.main-btn {
             background-color: var(--primary-color);
             color: var(--primary-text);
@@ -119,6 +118,32 @@
         }
         button.main-btn:active { opacity: 0.8; }
         
+        .step-container { display: none; }
+        .step-container.active { display: block; }
+        
+        .step-indicator {
+            text-align: center;
+            font-size: 13px;
+            color: var(--hint-color);
+            margin-bottom: 10px;
+        }
+
+        .camera-btn {
+            background: #2b2f36;
+            border: 2px dashed var(--primary-color);
+            color: var(--text-color);
+            padding: 20px;
+            text-align: center;
+            border-radius: 12px;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 15px;
+            margin-bottom: 10px;
+        }
+        .camera-btn input { display: none; }
+
         .hidden { display: none; }
     </style>
 </head>
@@ -140,7 +165,6 @@
     <div id="passenger-section" class="section active">
         <h2>Заказ такси в Самаре</h2>
         
-        <!-- Интерактивная карта -->
         <div id="map"></div>
 
         <div class="form-group">
@@ -191,54 +215,147 @@
         <button class="main-btn" onclick="sendOrder()">Заказать такси</button>
     </div>
 
-    <!-- РЕЖИМ ВОДИТЕЛЯ -->
+    <!-- РЕЖИМ ВОДИТЕЛЯ (ПОШАГОВЫЙ) -->
     <div id="driver-section" class="section">
         <h2>Регистрация водителя</h2>
-        
-        <div class="form-group">
-            <label>ФИО водителя:</label>
-            <input type="text" id="driver-name" placeholder="Иванов Иван Иванович">
-        </div>
-        <div class="form-group">
-            <label>Номер телефона (будет указан для переводов):</label>
-            <input type="tel" id="driver-phone" placeholder="+7 (999) 000-00-00" oninput="updateDriverPhonePreview()">
-        </div>
-        <div class="form-group">
-            <label>Марка и модель автомобиля:</label>
-            <input type="text" id="driver-car" placeholder="Lada Vesta / Kia Rio">
-        </div>
-        <div class="form-group">
-            <label>Государственный номер:</label>
-            <input type="text" id="driver-number" placeholder="А123ВС63">
-        </div>
-        <div class="form-group">
-            <label>Примерное время прибытия к клиенту (минут):</label>
-            <input type="number" id="driver-eta" placeholder="Например: 7" min="1" max="60">
-        </div>
-        <div class="form-group">
-            <label>Фото документов (права, СТС):</label>
-            <input type="file" id="driver-docs" multiple accept="image/*">
+        <div class="step-indicator" id="step-indicator">Шаг 1 из 10</div>
+
+        <!-- ШАГ 1: Основные данные -->
+        <div class="step-container active" id="step-1">
+            <div class="form-group">
+                <label>ФИО водителя:</label>
+                <input type="text" id="driver-name" placeholder="Иванов Иван Иванович">
+            </div>
+            <div class="form-group">
+                <label>Номер телефона (для переводов):</label>
+                <input type="tel" id="driver-phone" placeholder="+7 (999) 000-00-00" oninput="updateDriverPhonePreview()">
+            </div>
+            <div class="form-group">
+                <label>Марка и модель автомобиля:</label>
+                <input type="text" id="driver-car" placeholder="Lada Vesta / Kia Rio">
+            </div>
+            <div class="form-group">
+                <label>Государственный номер:</label>
+                <input type="text" id="driver-number" placeholder="А123ВС63">
+            </div>
+            <div class="form-group">
+                <label>Примерное время прибытия (минут):</label>
+                <input type="number" id="driver-eta" placeholder="Например: 7" min="1" max="60">
+            </div>
+            <button class="main-btn" onclick="nextStep(2)">Далее →</button>
         </div>
 
-        <button class="main-btn" onclick="sendDriverRegistration()">Отправить на проверку</button>
+        <!-- ШАГ 2: Селфи водителя (фронтальная камера) -->
+        <div class="step-container" id="step-2">
+            <label>Сделайте селфи (фото вашего лица для профиля):</label>
+            <label class="camera-btn">
+                🤳 Сделать селфи (лицо)
+                <input type="file" accept="image/*" capture="user" id="photo-selfie" onchange="markPhotoDone(2)">
+            </label>
+            <div id="status-2" style="text-align: center; color: var(--hint-color); margin-bottom: 10px;">Селфи не сделано</div>
+            <button class="main-btn" onclick="nextStep(3)">Далее →</button>
+        </div>
+
+        <!-- ШАГ 3: Права (лицевая) -->
+        <div class="step-container" id="step-3">
+            <label>Сделайте фото водительского удостоверения (лицевая сторона):</label>
+            <label class="camera-btn">
+                📷 Сделать фото прав (лицо)
+                <input type="file" accept="image/*" capture="environment" id="photo-license-front" onchange="markPhotoDone(3)">
+            </label>
+            <div id="status-3" style="text-align: center; color: var(--hint-color); margin-bottom: 10px;">Фото не сделано</div>
+            <button class="main-btn" onclick="nextStep(4)">Далее →</button>
+        </div>
+
+        <!-- ШАГ 4: Права (оборотная) -->
+        <div class="step-container" id="step-4">
+            <label>Сделайте фото водительского удостоверения (оборотная сторона):</label>
+            <label class="camera-btn">
+                📷 Сделать фото прав (оборот)
+                <input type="file" accept="image/*" capture="environment" id="photo-license-back" onchange="markPhotoDone(4)">
+            </label>
+            <div id="status-4" style="text-align: center; color: var(--hint-color); margin-bottom: 10px;">Фото не сделано</div>
+            <button class="main-btn" onclick="nextStep(5)">Далее →</button>
+        </div>
+
+        <!-- ШАГ 5: СТС (лицевая) -->
+        <div class="step-container" id="step-5">
+            <label>Сделайте фото СТС автомобиля (лицевая сторона):</label>
+            <label class="camera-btn">
+                📷 Сделать фото СТС (лицо)
+                <input type="file" accept="image/*" capture="environment" id="photo-sts-front" onchange="markPhotoDone(5)">
+            </label>
+            <div id="status-5" style="text-align: center; color: var(--hint-color); margin-bottom: 10px;">Фото не сделано</div>
+            <button class="main-btn" onclick="nextStep(6)">Далее →</button>
+        </div>
+
+        <!-- ШАГ 6: СТС (оборотная) -->
+        <div class="step-container" id="step-6">
+            <label>Сделайте фото СТС автомобиля (оборотная сторона):</label>
+            <label class="camera-btn">
+                📷 Сделать фото СТС (оборот)
+                <input type="file" accept="image/*" capture="environment" id="photo-sts-back" onchange="markPhotoDone(6)">
+            </label>
+            <div id="status-6" style="text-align: center; color: var(--hint-color); margin-bottom: 10px;">Фото не сделано</div>
+            <button class="main-btn" onclick="nextStep(7)">Далее →</button>
+        </div>
+
+        <!-- ШАГ 7: Авто спереди -->
+        <div class="step-container" id="step-7">
+            <label>Сделайте фото автомобиля спереди:</label>
+            <label class="camera-btn">
+                📷 Фото авто спереди
+                <input type="file" accept="image/*" capture="environment" id="photo-car-front" onchange="markPhotoDone(7)">
+            </label>
+            <div id="status-7" style="text-align: center; color: var(--hint-color); margin-bottom: 10px;">Фото не сделано</div>
+            <button class="main-btn" onclick="nextStep(8)">Далее →</button>
+        </div>
+
+        <!-- ШАГ 8: Авто сзади -->
+        <div class="step-container" id="step-8">
+            <label>Сделайте фото автомобиля сзади:</label>
+            <label class="camera-btn">
+                📷 Фото авто сзади
+                <input type="file" accept="image/*" capture="environment" id="photo-car-back" onchange="markPhotoDone(8)">
+            </label>
+            <div id="status-8" style="text-align: center; color: var(--hint-color); margin-bottom: 10px;">Фото не сделано</div>
+            <button class="main-btn" onclick="nextStep(9)">Далее →</button>
+        </div>
+
+        <!-- ШАГ 9: Авто справа -->
+        <div class="step-container" id="step-9">
+            <label>Сделайте фото автомобиля справа:</label>
+            <label class="camera-btn">
+                📷 Фото авто справа
+                <input type="file" accept="image/*" capture="environment" id="photo-car-right" onchange="markPhotoDone(9)">
+            </label>
+            <div id="status-9" style="text-align: center; color: var(--hint-color); margin-bottom: 10px;">Фото не сделано</div>
+            <button class="main-btn" onclick="nextStep(10)">Далее →</button>
+        </div>
+
+        <!-- ШАГ 10: Авто слева -->
+        <div class="step-container" id="step-10">
+            <label>Сделайте фото автомобиля слева:</label>
+            <label class="camera-btn">
+                📷 Фото авто слева
+                <input type="file" accept="image/*" capture="environment" id="photo-car-left" onchange="markPhotoDone(10)">
+            </label>
+            <div id="status-10" style="text-align: center; color: var(--hint-color); margin-bottom: 10px;">Фото не сделано</div>
+            <button class="main-btn" onclick="sendDriverRegistration()">Завершить регистрацию 🚀</button>
+        </div>
+
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Предотвращаем перехват фокуса картой на инпутах
         document.querySelectorAll('input').forEach(input => {
-            input.addEventListener('touchstart', (e) => {
-                e.stopPropagation();
-            });
-            input.addEventListener('click', (e) => {
-                e.stopPropagation();
-                input.focus();
-            });
+            input.addEventListener('touchstart', (e) => { e.stopPropagation(); });
+            input.addEventListener('click', (e) => { e.stopPropagation(); input.focus(); });
         });
 
-        // Инициализация часов и даты
+        // Часы
         function updateDateTime() {
             const now = new Date();
             document.getElementById('current-date').innerText = now.toLocaleDateString('ru-RU');
@@ -256,6 +373,43 @@
             } else {
                 document.querySelectorAll('.tab')[1].classList.add('active');
                 document.getElementById('driver-section').classList.add('active');
+            }
+        }
+
+        // Пошаговая логика водителя
+        let currentStep = 1;
+        function nextStep(step) {
+            if (step === 2) {
+                let name = document.getElementById('driver-name').value;
+                let phone = document.getElementById('driver-phone').value;
+                let car = document.getElementById('driver-car').value;
+                let carNumber = document.getElementById('driver-number').value;
+                if (!name || !phone || !car || !carNumber) {
+                    alert('Пожалуйста, заполните все текстовые поля!');
+                    return;
+                }
+            }
+
+            document.querySelectorAll('.step-container').forEach(el => el.classList.remove('active'));
+            document.getElementById(`step-${step}`).classList.add('active');
+            document.getElementById('step-indicator').innerText = `Шаг ${step} из 10`;
+            currentStep = step;
+        }
+
+        function markPhotoDone(step) {
+            let fileInput = document.getElementById(
+                step === 2 ? 'photo-selfie' :
+                step === 3 ? 'photo-license-front' :
+                step === 4 ? 'photo-license-back' :
+                step === 5 ? 'photo-sts-front' :
+                step === 6 ? 'photo-sts-back' :
+                step === 7 ? 'photo-car-front' :
+                step === 8 ? 'photo-car-back' :
+                step === 9 ? 'photo-car-right' : 'photo-car-left'
+            );
+            if (fileInput.files && fileInput.files.length > 0) {
+                document.getElementById(`status-${step}`).innerText = "✅ Фото успешно сделано!";
+                document.getElementById(`status-${step}`).style.color = "#4cd964";
             }
         }
 
@@ -405,11 +559,6 @@
             let car = document.getElementById('driver-car').value;
             let carNumber = document.getElementById('driver-number').value;
             let eta = document.getElementById('driver-eta').value || '5';
-
-            if (!name || !phone || !car || !carNumber) {
-                alert('Заполните все обязательные поля анкеты!');
-                return;
-            }
 
             let data = {
                 action: 'driver_registration',
