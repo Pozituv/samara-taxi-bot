@@ -2,8 +2,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Такси Самара – Полная версия</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Такси Самара</title>
     <!-- Официальный скрипт Telegram WebApp -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- Подключаем Яндекс.Карты API -->
@@ -24,6 +24,9 @@
             margin: 0;
             padding: 16px;
             box-sizing: border-box;
+            /* Разрешаем стандартное поведение для нормального вызова клавиатуры */
+            -webkit-user-select: text;
+            user-select: text;
         }
         h2 { text-align: center; margin-bottom: 15px; font-size: 20px; }
         
@@ -53,22 +56,24 @@
             height: 220px;
             border-radius: 12px;
             margin-bottom: 16px;
+            touch-action: pan-x pan-y;
         }
 
-        .form-group { margin-bottom: 14px; }
+        .form-group { margin-bottom: 14px; position: relative; z-index: 10; }
         label { display: block; font-size: 13px; color: var(--hint-color); margin-bottom: 5px; }
         input, select {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             border-radius: 10px;
             border: 1px solid var(--card-bg);
             background: var(--card-bg);
             color: var(--text-color);
-            font-size: 15px;
+            font-size: 16px; /* 16px предотвращает автозум на iOS и гарантирует фокус */
             box-sizing: border-box;
             outline: none;
+            -webkit-appearance: none;
         }
-        input:focus { border-color: var(--primary-color); }
+        input:focus { border-color: var(--primary-color); background: #23262b; }
         
         /* Карточки тарифов и оплаты */
         .tariffs, .payment-options { display: flex; gap: 10px; margin-bottom: 16px; }
@@ -139,11 +144,11 @@
         <div id="map"></div>
 
         <div class="form-group">
-            <label>Откуда (напишите или кликните на карту):</label>
+            <label>Откуда (напишите адрес или кликните на карту):</label>
             <input type="text" id="from-address" placeholder="Например: Ново-Садовая 106">
         </div>
         <div class="form-group">
-            <label>Куда (напишите или кликните на карту):</label>
+            <label>Куда (напишите адрес или кликните на карту):</label>
             <input type="text" id="to-address" placeholder="Например: Полевая 15">
         </div>
 
@@ -171,13 +176,11 @@
             </div>
         </div>
 
-        <!-- Динамический блок для перевода (показывает номер телефона водителя) -->
         <div class="form-group" id="transfer-info-box">
             <label>Номер для перевода водителю:</label>
             <input type="text" id="driver-phone-display" value="+7 (999) 000-00-00 (уточняется)" readonly style="color: var(--primary-color); font-weight: bold;">
         </div>
 
-        <!-- Динамический блок для наличных (сдача) -->
         <div class="form-group hidden" id="cash-change-box">
             <label>С какой купюры потребуется сдача?</label>
             <input type="text" id="cash-change" placeholder="Например: с 1000 рублей или без сдачи">
@@ -224,6 +227,17 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
+        // Предотвращаем перехват фокуса картой на инпутах
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('touchstart', (e) => {
+                e.stopPropagation();
+            });
+            input.addEventListener('click', (e) => {
+                e.stopPropagation();
+                input.focus();
+            });
+        });
+
         // Инициализация часов и даты
         function updateDateTime() {
             const now = new Date();
@@ -233,7 +247,6 @@
         setInterval(updateDateTime, 1000);
         updateDateTime();
 
-        // Управление вкладками интерфейса
         function switchTab(role) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -246,7 +259,6 @@
             }
         }
 
-        // Логика выбора оплаты
         let currentPayment = 'transfer';
         function setPayment(type) {
             currentPayment = type;
@@ -262,7 +274,6 @@
             }
         }
 
-        // Автоматическое обновление номера телефона водителя для перевода
         function updateDriverPhonePreview() {
             let phone = document.getElementById('driver-phone').value;
             if (phone.trim() !== '') {
@@ -270,7 +281,6 @@
             }
         }
 
-        // Логика карты, геокодинга и тарифов
         let map, fromCoord = null, toCoord = null, routeLengthKm = 0;
         let currentTariff = 'eco'; 
         const basePrice = 150; 
@@ -355,7 +365,6 @@
             document.getElementById('price-display').innerText = `Расстояние: ${routeLengthKm.toFixed(1)} км | Итого: ${Math.round(total)} ₽`;
         }
 
-        // Отправка заказа в Telegram
         function sendOrder() {
             let from = document.getElementById('from-address').value;
             let to = document.getElementById('to-address').value;
@@ -390,7 +399,6 @@
             tg.sendData(JSON.stringify(data));
         }
 
-        // Отправка заявки водителя в Telegram
         function sendDriverRegistration() {
             let name = document.getElementById('driver-name').value;
             let phone = document.getElementById('driver-phone').value;
