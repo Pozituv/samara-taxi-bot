@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Такси Самара</title>
-    <!-- Официальный скрипт Telegram WebApp -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Подключаем Яндекс.Карты API -->
     <script src="https://api-maps.yandex.ru/2.1/?apikey=ваш_api_ключ&lang=ru_RU" type="text/javascript"></script>
     <style>
         :root {
@@ -29,14 +27,12 @@
         }
         h2 { text-align: center; margin-bottom: 15px; font-size: 20px; }
         
-        /* Вкладки переключения */
         .tabs { display: flex; background: var(--card-bg); border-radius: 12px; padding: 4px; margin-bottom: 16px; }
         .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; border-radius: 8px; font-weight: 600; font-size: 14px; transition: 0.3s; }
         .tab.active { background: var(--primary-color); color: var(--primary-text); }
         .section { display: none; }
         .section.active { display: block; }
         
-        /* Виджет часов и даты */
         .datetime-widget {
             background: var(--card-bg);
             border-radius: 12px;
@@ -49,7 +45,6 @@
             font-weight: 500;
         }
 
-        /* Карта */
         #map {
             width: 100%;
             height: 220px;
@@ -74,7 +69,6 @@
         }
         input:focus { border-color: var(--primary-color); background: #23262b; }
         
-        /* Карточки тарифов и оплаты */
         .tariffs, .payment-options { display: flex; gap: 10px; margin-bottom: 16px; }
         .tariff-card, .pay-card {
             flex: 1;
@@ -90,7 +84,6 @@
         .tariff-title, .pay-title { font-weight: bold; font-size: 14px; margin-bottom: 4px; }
         .tariff-price, .pay-desc { font-size: 12px; color: var(--hint-color); }
 
-        /* Блок стоимости */
         .price-box {
             background: var(--card-bg);
             padding: 14px;
@@ -102,7 +95,6 @@
             border: 1px dashed var(--hint-color);
         }
 
-        /* Кнопки действия */
         button.main-btn {
             background-color: var(--primary-color);
             color: var(--primary-text);
@@ -128,34 +120,33 @@
             margin-bottom: 10px;
         }
 
-        .camera-btn {
-            background: #2b2f36;
-            border: 2px dashed var(--primary-color);
-            color: var(--text-color);
-            padding: 20px;
-            text-align: center;
-            border-radius: 12px;
-            cursor: pointer;
-            display: block;
+        /* Стили для встроенной камеры */
+        .camera-box {
             width: 100%;
-            box-sizing: border-box;
-            font-size: 15px;
+            height: 280px;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
             margin-bottom: 10px;
         }
-        .camera-btn input { display: none; }
+        video, canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        canvas { display: none; }
 
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <!-- Виджет текущего времени и даты -->
     <div class="datetime-widget">
         <span id="current-date">--.--.----</span>
         <span id="current-time">--:--:--</span>
     </div>
 
-    <!-- Переключение режимов (Пассажир / Водитель) -->
     <div class="tabs">
         <div class="tab active" onclick="switchTab('passenger')">Пассажир</div>
         <div class="tab" onclick="switchTab('driver')">Водитель</div>
@@ -168,11 +159,11 @@
         <div id="map"></div>
 
         <div class="form-group">
-            <label>Откуда (напишите адрес или кликните на карту):</label>
+            <label>Откуда:</label>
             <input type="text" id="from-address" placeholder="Например: Ново-Садовая 106">
         </div>
         <div class="form-group">
-            <label>Куда (напишите адрес или кликните на карту):</label>
+            <label>Куда:</label>
             <input type="text" id="to-address" placeholder="Например: Полевая 15">
         </div>
 
@@ -215,12 +206,11 @@
         <button class="main-btn" onclick="sendOrder()">Заказать такси</button>
     </div>
 
-    <!-- РЕЖИМ ВОДИТЕЛЯ (ПОШАГОВЫЙ) -->
+    <!-- РЕЖИМ ВОДИТЕЛЯ (ПОШАГОВЫЙ С ЖИВОЙ КАМЕРОЙ) -->
     <div id="driver-section" class="section">
         <h2>Регистрация водителя</h2>
         <div class="step-indicator" id="step-indicator">Шаг 1 из 10</div>
 
-        <!-- ШАГ 1: Основные данные -->
         <div class="step-container active" id="step-1">
             <div class="form-group">
                 <label>ФИО водителя:</label>
@@ -241,103 +231,105 @@
             <button class="main-btn" onclick="nextStep(2)">Далее →</button>
         </div>
 
-        <!-- ШАГ 2: Селфи водителя -->
+        <!-- ШАГИ КАМЕРЫ (2 - 10) -->
+        <!-- Шаблон шага камеры создается универсальным блоком -->
         <div class="step-container" id="step-2">
-            <label>Сделайте селфи (откроется фронтальная камера):</label>
-            <label class="camera-btn">
-                🤳 Открыть камеру (Селфи)
-                <input type="file" accept="image/*" capture="user" id="photo-selfie" onchange="markPhotoDone(2)">
-            </label>
-            <div id="status-2" style="text-align: center; color: var(--hint-color); margin-bottom: 10px;">Селфи не сделано</div>
-            <button class="main-btn" onclick="nextStep(3)">Далее →</button>
+            <label id="cam-label-2">Селфи водителя (лицо):</label>
+            <div class="camera-box">
+                <video id="video-2" autoplay playsinline></video>
+                <canvas id="canvas-2"></canvas>
+            </div>
+            <button class="main-btn" onclick="takePhoto(2, 'user')">📸 Сделать снимок</button>
+            <div id="status-2" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
+            <button class="main-btn hidden" id="next-btn-2" onclick="nextStep(3)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
         </div>
 
-        <!-- ШАГ 3: Права (лицевая) -->
         <div class="step-container" id="step-3">
-            <label>Фото прав — лицевая сторона (откроется камера):</label>
-            <label class="camera-btn">
-                📷 Открыть камеру (Права лицо)
-                <input type="file" accept="image/*" capture="environment" id="photo-license-front" onchange="markPhotoDone(3)">
-            </label>
-            <div id="status-3" style="text-align: center; color: var(--hint-color); margin-bottom: 10px;">Фото не сделано</div>
-            <button class="main-btn" onclick="nextStep(4)">Далее →</button>
+            <label id="cam-label-3">Права — Лицевая сторона:</label>
+            <div class="camera-box">
+                <video id="video-3" autoplay playsinline></video>
+                <canvas id="canvas-3"></canvas>
+            </div>
+            <button class="main-btn" onclick="takePhoto(3, 'environment')">📸 Сделать снимок</button>
+            <div id="status-3" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
+            <button class="main-btn hidden" id="next-btn-3" onclick="nextStep(4)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
         </div>
 
-        <!-- ШАГ 4: Права (оборотная) -->
         <div class="step-container" id="step-4">
-            <label>Фото прав — оборотная сторона (откроется камера):</label>
-            <label class="camera-btn">
-                📷 Открыть камеру (Права оборот)
-                <input type="file" accept="image/*" capture="environment" id="photo-license-back" onchange="markPhotoDone(4)">
-            </label>
-            <div id="status-4" style="text-align: center; color: var(--hint-color); margin-bottom: 10px;">Фото не сделано</div>
-            <button class="main-btn" onclick="nextStep(5)">Далее →</button>
+            <label id="cam-label-4">Права — Оборотная сторона:</label>
+            <div class="camera-box">
+                <video id="video-4" autoplay playsinline></video>
+                <canvas id="canvas-4"></canvas>
+            </div>
+            <button class="main-btn" onclick="takePhoto(4, 'environment')">📸 Сделать снимок</button>
+            <div id="status-4" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
+            <button class="main-btn hidden" id="next-btn-4" onclick="nextStep(5)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
         </div>
 
-        <!-- ШАГ 5: СТС (лицевая) -->
         <div class="step-container" id="step-5">
-            <label>Фото СТС — лицевая сторона (откроется камера):</label>
-            <label class="camera-btn">
-                📷 Открыть камеру (СТС лицо)
-                <input type="file" accept="image/*" capture="environment" id="photo-sts-front" onchange="markPhotoDone(5)">
-            </label>
-            <div id="status-5" style="text-align: center; color: var(--hint-color); margin-bottom: 10px;">Фото не сделано</div>
-            <button class="main-btn" onclick="nextStep(6)">Далее →</button>
+            <label id="cam-label-5">СТС — Лицевая сторона:</label>
+            <div class="camera-box">
+                <video id="video-5" autoplay playsinline></video>
+                <canvas id="canvas-5"></canvas>
+            </div>
+            <button class="main-btn" onclick="takePhoto(5, 'environment')">📸 Сделать снимок</button>
+            <div id="status-5" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
+            <button class="main-btn hidden" id="next-btn-5" onclick="nextStep(6)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
         </div>
 
-        <!-- ШАГ 6: СТС (оборотная) -->
         <div class="step-container" id="step-6">
-            <label>Фото СТС — оборотная сторона (откроется камера):</label>
-            <label class="camera-btn">
-                📷 Открыть камеру (СТС оборот)
-                <input type="file" accept="image/*" capture="environment" id="photo-sts-back" onchange="markPhotoDone(6)">
-            </label>
-            <div id="status-6" style="text-align: center; color: var(--hint-color); margin-bottom: 10px;">Фото не сделано</div>
-            <button class="main-btn" onclick="nextStep(7)">Далее →</button>
+            <label id="cam-label-6">СТС — Оборотная сторона:</label>
+            <div class="camera-box">
+                <video id="video-6" autoplay playsinline></video>
+                <canvas id="canvas-6"></canvas>
+            </div>
+            <button class="main-btn" onclick="takePhoto(6, 'environment')">📸 Сделать снимок</button>
+            <div id="status-6" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
+            <button class="main-btn hidden" id="next-btn-6" onclick="nextStep(7)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
         </div>
 
-        <!-- ШАГ 7: Авто спереди -->
         <div class="step-container" id="step-7">
-            <label>Фото автомобиля спереди (откроется камера):</label>
-            <label class="camera-btn">
-                📷 Открыть камеру (Авто спереди)
-                <input type="file" accept="image/*" capture="environment" id="photo-car-front" onchange="markPhotoDone(7)">
-            </label>
-            <div id="status-7" style="text-align: center; color: var(--hint-color); margin-bottom: 10px;">Фото не сделано</div>
-            <button class="main-btn" onclick="nextStep(8)">Далее →</button>
+            <label id="cam-label-7">Фото автомобиля — Спереди:</label>
+            <div class="camera-box">
+                <video id="video-7" autoplay playsinline></video>
+                <canvas id="canvas-7"></canvas>
+            </div>
+            <button class="main-btn" onclick="takePhoto(7, 'environment')">📸 Сделать снимок</button>
+            <div id="status-7" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
+            <button class="main-btn hidden" id="next-btn-7" onclick="nextStep(8)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
         </div>
 
-        <!-- ШАГ 8: Авто сзади -->
         <div class="step-container" id="step-8">
-            <label>Фото автомобиля сзади (откроется камера):</label>
-            <label class="camera-btn">
-                📷 Открыть камеру (Авто сзади)
-                <input type="file" accept="image/*" capture="environment" id="photo-car-back" onchange="markPhotoDone(8)">
-            </label>
-            <div id="status-8" style="text-align: center; color: var(--hint-color); margin-bottom: 10px;">Фото не сделано</div>
-            <button class="main-btn" onclick="nextStep(9)">Далее →</button>
+            <label id="cam-label-8">Фото автомобиля — Сзади:</label>
+            <div class="camera-box">
+                <video id="video-8" autoplay playsinline></video>
+                <canvas id="canvas-8"></canvas>
+            </div>
+            <button class="main-btn" onclick="takePhoto(8, 'environment')">📸 Сделать снимок</button>
+            <div id="status-8" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
+            <button class="main-btn hidden" id="next-btn-8" onclick="nextStep(9)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
         </div>
 
-        <!-- ШАГ 9: Авто справа -->
         <div class="step-container" id="step-9">
-            <label>Фото автомобиля справа (откроется камера):</label>
-            <label class="camera-btn">
-                📷 Открыть камеру (Авто справа)
-                <input type="file" accept="image/*" capture="environment" id="photo-car-right" onchange="markPhotoDone(9)">
-            </label>
-            <div id="status-9" style="text-align: center; color: var(--hint-color); margin-bottom: 10px;">Фото не сделано</div>
-            <button class="main-btn" onclick="nextStep(10)">Далее →</button>
+            <label id="cam-label-9">Фото автомобиля — Справа:</label>
+            <div class="camera-box">
+                <video id="video-9" autoplay playsinline></video>
+                <canvas id="canvas-9"></canvas>
+            </div>
+            <button class="main-btn" onclick="takePhoto(9, 'environment')">📸 Сделать снимок</button>
+            <div id="status-9" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
+            <button class="main-btn hidden" id="next-btn-9" onclick="nextStep(10)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
         </div>
 
-        <!-- ШАГ 10: Авто слева -->
         <div class="step-container" id="step-10">
-            <label>Фото автомобиля слева (откроется камера):</label>
-            <label class="camera-btn">
-                📷 Открыть камеру (Авто слева)
-                <input type="file" accept="image/*" capture="environment" id="photo-car-left" onchange="markPhotoDone(10)">
-            </label>
-            <div id="status-10" style="text-align: center; color: var(--hint-color); margin-bottom: 10px;">Фото не сделано</div>
-            <button class="main-btn" onclick="sendDriverRegistration()">Завершить регистрацию 🚀</button>
+            <label id="cam-label-10">Фото автомобиля — Слева:</label>
+            <div class="camera-box">
+                <video id="video-10" autoplay playsinline></video>
+                <canvas id="canvas-10"></canvas>
+            </div>
+            <button class="main-btn" onclick="takePhoto(10, 'environment')">📸 Сделать снимок</button>
+            <div id="status-10" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
+            <button class="main-btn hidden" id="next-btn-10" onclick="sendDriverRegistration()" style="background: #4cd964; margin-top: 8px;">Завершить регистрацию 🚀</button>
         </div>
 
     </div>
@@ -351,7 +343,6 @@
             input.addEventListener('click', (e) => { e.stopPropagation(); input.focus(); });
         });
 
-        // Часы
         function updateDateTime() {
             const now = new Date();
             document.getElementById('current-date').innerText = now.toLocaleDateString('ru-RU');
@@ -369,6 +360,7 @@
             } else {
                 document.querySelectorAll('.tab')[1].classList.add('active');
                 document.getElementById('driver-section').classList.add('active');
+                startCamera(2, 'user'); // Запускаем камеру для селфи при переходе на шаг 2
             }
         }
 
@@ -389,23 +381,52 @@
             document.getElementById(`step-${step}`).classList.add('active');
             document.getElementById('step-indicator').innerText = `Шаг ${step} из 10`;
             currentStep = step;
+
+            // Запускаем камеру для текущего шага
+            let facing = (step === 2) ? 'user' : 'environment';
+            startCamera(step, facing);
         }
 
-        function markPhotoDone(step) {
-            let fileInput = document.getElementById(
-                step === 2 ? 'photo-selfie' :
-                step === 3 ? 'photo-license-front' :
-                step === 4 ? 'photo-license-back' :
-                step === 5 ? 'photo-sts-front' :
-                step === 6 ? 'photo-sts-back' :
-                step === 7 ? 'photo-car-front' :
-                step === 8 ? 'photo-car-back' :
-                step === 9 ? 'photo-car-right' : 'photo-car-left'
-            );
-            if (fileInput.files && fileInput.files.length > 0) {
-                document.getElementById(`status-${step}`).innerText = "✅ Фото успешно сделано!";
-                document.getElementById(`status-${step}`).style.color = "#4cd964";
+        // Функция запуска прямой камеры в браузере
+        async function startCamera(step, facingMode) {
+            try {
+                let video = document.getElementById(`video-${step}`);
+                if (video.srcObject) return; // Если уже запущено
+                
+                let stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: facingMode },
+                    audio: false
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                console.error("Ошибка доступа к камере: ", err);
+                alert("Не удалось получить доступ к камере. Убедитесь, что разрешили её использование в Telegram.");
             }
+        }
+
+        // Функция захвата фото с видеопотока
+        function takePhoto(step, facingMode) {
+            let video = document.getElementById(`video-${step}`);
+            let canvas = document.getElementById(`canvas-${step}`);
+            let context = canvas.getContext('2d');
+
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Останавливаем поток камеры для этого шага
+            let stream = video.srcObject;
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+
+            // Прячем видео, показываем снимок на canvas
+            video.classList.add('hidden');
+            canvas.classList.remove('hidden');
+
+            document.getElementById(`status-${step}`).innerText = "✅ Снимок успешно сделан!";
+            document.getElementById(`status-${step}`).style.color = "#4cd964";
+            document.getElementById(`next-btn-${step}`).classList.remove('hidden');
         }
 
         let currentPayment = 'transfer';
@@ -527,8 +548,8 @@
                 routeLengthKm = 5; 
             }
 
-            let ratePerKm = tariffRates[currentTariff];
-            let total = basePrice + (routeLengthKm * ratePerKm);
+            let ratePerKit = tariffRates[currentTariff];
+            let total = basePrice + (routeLengthKm * ratePerKit);
             let priceText = `Расстояние: ~${routeLengthKm.toFixed(1)} км | Итого: ${Math.round(total)} ₽`;
 
             let paymentInfo = currentPayment === 'transfer' 
@@ -551,14 +572,14 @@
         function sendDriverRegistration() {
             let name = document.getElementById('driver-name').value;
             let phone = document.getElementById('driver-phone').value;
-            let car = document.getElementById('driver-car').value;
+            let car = document.getElementById('driver-car'].value || document.getElementById('driver-car').value;
             let carNumber = document.getElementById('driver-number').value;
 
             let data = {
                 action: 'driver_registration',
                 name: name,
                 phone: phone,
-                car: car,
+                car: document.getElementById('driver-car').value,
                 carNumber: carNumber,
                 rating: 5.00
             };
