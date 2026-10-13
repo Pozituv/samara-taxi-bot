@@ -1,2 +1,525 @@
 # samara-taxi-bot
 Мини-приложение такси
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Такси Самара — Пассажирам и Водителям</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Подключаем Яндекс.Карты API -->
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=ваш_api_ключ&lang=ru_RU" type="text/javascript"></script>
+    <style>
+        :root {
+            --primary-color: var(--tg-theme-button-color, #2481cc);
+            --primary-text: var(--tg-theme-button-text-color, #ffffff);
+            --bg-color: var(--tg-theme-bg-color, #f4f5f7);
+            --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
+            --text-color: var(--tg-theme-text-color, #1c1c1e);
+            --hint-color: var(--tg-theme-hint-color, #8e8e93);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 16px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            box-sizing: border-box;
+        }
+
+        .time-widget {
+            background: linear-gradient(135deg, var(--primary-color), #1a5c93);
+            color: var(--primary-text);
+            padding: 16px 20px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+            margin-bottom: 16px;
+        }
+
+        .time-widget .clock {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 4px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .time-widget .date {
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0.9;
+            text-transform: capitalize;
+        }
+
+        .tabs {
+            display: flex;
+            background: var(--card-bg);
+            padding: 4px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: none;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--hint-color);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active {
+            background: var(--primary-color);
+            color: var(--primary-text);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+
+        .field-group {
+            margin-bottom: 14px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--hint-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-with-map {
+            display: flex;
+            gap: 8px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 14px;
+            box-sizing: border-box;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 12px;
+            font-size: 15px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            outline: none;
+        }
+
+        input[type="file"] {
+            padding: 8px;
+            font-size: 13px;
+        }
+
+        .btn-map-pick {
+            background-color: var(--primary-color);
+            color: var(--primary-text);
+            border: none;
+            border-radius: 12px;
+            padding: 0 14px;
+            font-size: 18px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .price-card {
+            background: rgba(36, 129, 204, 0.08);
+            border: 1.5px dashed var(--primary-color);
+            border-radius: 14px;
+            padding: 14px;
+            text-align: center;
+            margin: 18px 0;
+        }
+
+        .price-amount {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--primary-color);
+        }
+
+        .rating-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 193, 7, 0.15);
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+
+        .stars {
+            color: #ff9800;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background-color: var(--primary-color);
+            color: var(--primary-text);
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 6px 16px rgba(36, 129, 204, 0.3);
+        }
+
+        .btn-submit:active {
+            opacity: 0.9;
+        }
+
+        /* Модальное окно для карты */
+        #mapModal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+
+        .map-container {
+            background: #fff;
+            width: 100%;
+            max-width: 500px;
+            height: 80vh;
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #yandexMap {
+            width: 100%;
+            flex-grow: 1;
+        }
+
+        .map-header {
+            padding: 14px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 16px;
+            background: #f4f5f7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .close-map {
+            background: none;
+            border: none;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="time-widget">
+        <div class="clock" id="clock">00:00:00</div>
+        <div class="date" id="date">Загрузка...</div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" id="passengerTab">🚖 Пассажир</button>
+        <button class="tab-btn" id="driverTab">🚘 Водителям</button>
+    </div>
+
+    <!-- Форма пассажира -->
+    <div class="card" id="passengerForm">
+        <div class="card-title">Заказ такси</div>
+
+        <div class="field-group">
+            <label for="tripType">Маршрут</label>
+            <select id="tripType">
+                <option value="city">🏙️ По Самаре</option>
+                <option value="region">🛣️ По области</option>
+            </select>
+        </div>
+
+        <div class="field-group" id="cityTariffGroup">
+            <label for="cityTariff">Тариф</label>
+            <select id="cityTariff">
+                <option value="200">Эконом (от 200 ₽)</option>
+                <option value="350">Комфорт (от 350 ₽)</option>
+                <option value="600">Грузовой / ГАЗель (от 600 ₽)</option>
+            </select>
+        </div>
+
+        <div class="field-group" id="regionTariffGroup" style="display: none;">
+            <label for="regionDestination">Направление</label>
+            <select id="regionDestination">
+                <option value="1500">Самара ↔ Тольятти (от 1500 ₽)</option>
+                <option value="1200">Самара ↔ Новокуйбышевск (от 1200 ₽)</option>
+                <option value="1300">Самара ↔ Чапаевск (от 1300 ₽)</option>
+                <option value="1000">Самара ↔ Кинель (от 1000 ₽)</option>
+                <option value="4500">Самара ↔ Сызрань (от 4500 ₽)</option>
+                <option value="3500">Самара ↔ Похвистнево (от 3500 ₽)</option>
+            </select>
+        </div>
+
+        <div class="field-group">
+            <label for="from">Откуда (А)</label>
+            <div class="input-with-map">
+                <input type="text" id="from" placeholder="Улица, дом или выберите на карте">
+                <button type="button" class="btn-map-pick" onclick="openMap('from')">📍</button>
+            </div>
+        </div>
+
+        <div class="field-group">
+            <label for="to">Куда (Б)</label>
+            <div class="input-with-map">
+                <input type="text" id="to" placeholder="Пункт назначения или выберите на карте">
+                <button type="button" class="btn-map-pick" onclick="openMap('to')">📍</button>
+            </div>
+        </div>
+
+        <div class="price-card">
+            <div style="font-size: 12px; color: var(--hint-color);">Предварительная стоимость</div>
+            <div class="price-amount" id="priceDisplay">200 ₽</div>
+        </div>
+
+        <button class="btn-submit" id="orderBtn">Вызвать такси</button>
+    </div>
+
+    <!-- Форма водителя -->
+    <div class="card" id="driverForm" style="display: none;">
+        <div class="card-title">Регистрация водителя</div>
+
+        <div class="rating-box">
+            <span>Стартовый рейтинг:</span>
+            <span class="stars">★ 5.00</span>
+        </div>
+
+        <div class="field-group">
+            <label for="driverName">ФИО водителя</label>
+            <input type="text" id="driverName" placeholder="Иванов Иван Иванович">
+        </div>
+
+        <div class="field-group">
+            <label for="driverPhone">Номер телефона</label>
+            <input type="tel" id="driverPhone" placeholder="+7 (9XX) XXX-XX-XX">
+        </div>
+
+        <div class="field-group">
+            <label for="carModel">Марка и модель авто / грузовика</label>
+            <input type="text" id="carModel" placeholder="ГАЗель NEXT / LADA Vesta">
+        </div>
+
+        <div class="field-group">
+            <label for="carNumber">Гос. номер</label>
+            <input type="text" id="carNumber" placeholder="А 000 АА 163">
+        </div>
+
+        <div class="field-group">
+            <label for="licenseFront">Права (лицевая сторона)</label>
+            <input type="file" id="licenseFront" accept="image/*">
+        </div>
+
+        <div class="field-group">
+            <label for="licenseBack">Права (оборотная сторона)</label>
+            <input type="file" id="licenseBack" accept="image/*">
+        </div>
+
+        <div class="field-group">
+            <label for="stsPhoto">Фото СТС (свидетельство)</label>
+            <input type="file" id="stsPhoto" accept="image/*">
+        </div>
+
+        <div class="field-group">
+            <label for="carPhoto">Фото авто (сбоку/спереди)</label>
+            <input type="file" id="carPhoto" accept="image/*">
+        </div>
+
+        <button class="btn-submit" id="registerDriverBtn">Отправить на проверку</button>
+    </div>
+
+    <!-- Модальное окно карты -->
+    <div id="mapModal">
+        <div class="map-container">
+            <div class="map-header">
+                <span id="mapModalTitle">Выберите точку на карте</span>
+                <button class="close-map" onclick="closeMap()">✕</button>
+            </div>
+            <div id="yandexMap"></div>
+        </div>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // Часы и дата
+        function updateDateTime() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('clock').innerText = `${hours}:${minutes}:${seconds}`;
+
+            const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            document.getElementById('date').innerText = now.toLocaleDateString('ru-RU', options);
+        }
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
+
+        // Переключение вкладок
+        const passengerTab = document.getElementById('passengerTab');
+        const driverTab = document.getElementById('driverTab');
+        const passengerForm = document.getElementById('passengerForm');
+        const driverForm = document.getElementById('driverForm');
+
+        passengerTab.onclick = () => {
+            passengerTab.classList.add('active');
+            driverTab.classList.remove('active');
+            passengerForm.style.display = 'block';
+            driverForm.style.display = 'none';
+        };
+
+        driverTab.onclick = () => {
+            driverTab.classList.add('active');
+            passengerTab.classList.remove('active');
+            driverForm.style.display = 'block';
+            passengerForm.style.display = 'none';
+        };
+
+        // Цены
+        let tripType = document.getElementById('tripType');
+        let cityTariffGroup = document.getElementById('cityTariffGroup');
+        let regionTariffGroup = document.getElementById('regionTariffGroup');
+        let cityTariff = document.getElementById('cityTariff');
+        let regionDestination = document.getElementById('regionDestination');
+        let priceDisplay = document.getElementById('priceDisplay');
+
+        tripType.onchange = function() {
+            if (tripType.value === 'city') {
+                cityTariffGroup.style.display = 'block';
+                regionTariffGroup.style.display = 'none';
+            } else {
+                cityTariffGroup.style.display = 'none';
+                regionTariffGroup.style.display = 'block';
+            }
+            updatePrice();
+        };
+
+        cityTariff.onchange = updatePrice;
+        regionDestination.onchange = updatePrice;
+
+        function updatePrice() {
+            let price = tripType.value === 'city' ? cityTariff.value : regionDestination.value;
+            priceDisplay.innerText = `${price} ₽`;
+        }
+
+        // --- Интеграция Яндекс.Карт ---
+        let myMap = null;
+        let currentTargetField = null;
+
+        ymaps.ready(initMapSystem);
+
+        function initMapSystem() {
+            // Карта инициализируется один раз
+        }
+
+        function openMap(fieldId) {
+            currentTargetField = fieldId;
+            document.getElementById('mapModal').style.display = 'flex';
+
+            if (!myMap) {
+                myMap = new ymaps.Map("yandexMap", {
+                    center: [53.1955, 50.1018], // Самара
+                    zoom: 13,
+                    controls: ['zoomControl', 'geolocationControl']
+                });
+
+                myMap.events.add('click', function (e) {
+                    let coords = e.get('coords');
+                    
+                    // Обратное геокодирование (получаем адрес по координатам клика)
+                    ymaps.geocode(coords).then(function (res) {
+                        let firstGeoObject = res.geoObjects.get(0);
+                        let address = firstGeoObject ? firstGeoObject.getAddressLine() : 'Выбранная точка';
+                        
+                        // Подставляем адрес в нужное поле
+                        document.getElementById(currentTargetField).value = address;
+                        closeMap();
+                    });
+                });
+            } else {
+                myMap.container.fitToViewport();
+            }
+        }
+
+        function closeMap() {
+            document.getElementById('mapModal').style.display = 'none';
+        }
+
+        // Отправка заказа
+        document.getElementById('orderBtn').onclick = function() {
+            let from = document.getElementById('from').value.trim();
+            let to = document.getElementById('to').value.trim();
+
+            if (!from || !to) {
+                alert('Укажите точки отправления и назначения');
+                return;
+            }
+
+            let orderData = {
+                action: 'new_order',
+                from: from,
+                to: to,
+                price: priceDisplay.innerText,
+                time: document.getElementById('clock').innerText
+            };
+            tg.sendData(JSON.stringify(orderData));
+        };
+
+        // Отправка водителя
+        document.getElementById('registerDriverBtn').onclick = function() {
+            let name = document.getElementById('driverName').value.trim();
+            let phone = document.getElementById('driverPhone').value.trim();
+            let car = document.getElementById('carModel').value.trim();
+            let carNum = document.getElementById('carNumber').value.trim();
+
+            if (!name || !phone || !car || !carNum) {
+                alert('Заполните все данные водителя');
+                return;
+            }
+
+            let driverData = {
+                action: 'driver_registration',
+                name: name,
+                phone: phone,
+                car: car,
+                carNumber: carNum,
+                rating: 5.00
+            };
+            tg.sendData(JSON.stringify(driverData));
+        };
+    </script>
+</body>
+</html>
