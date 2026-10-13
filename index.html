@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Такси Самара</title>
+    <title>Такси Самара – Полная версия</title>
     <!-- Официальный скрипт Telegram WebApp -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- Подключаем Яндекс.Карты API -->
@@ -23,15 +23,18 @@
             color: var(--text-color);
             margin: 0;
             padding: 16px;
+            box-sizing: border-box;
         }
-        h2 { text-align: center; margin-bottom: 15px; }
+        h2 { text-align: center; margin-bottom: 15px; font-size: 20px; }
+        
+        /* Вкладки переключения */
         .tabs { display: flex; background: var(--card-bg); border-radius: 12px; padding: 4px; margin-bottom: 16px; }
         .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; border-radius: 8px; font-weight: 600; font-size: 14px; transition: 0.3s; }
         .tab.active { background: var(--primary-color); color: var(--primary-text); }
         .section { display: none; }
         .section.active { display: block; }
         
-        /* Виджет часов */
+        /* Виджет часов и даты */
         .datetime-widget {
             background: var(--card-bg);
             border-radius: 12px;
@@ -52,8 +55,8 @@
             margin-bottom: 16px;
         }
 
-        .form-group { margin-bottom: 12px; }
-        label { display: block; font-size: 13px; color: var(--hint-color); margin-bottom: 4px; }
+        .form-group { margin-bottom: 14px; }
+        label { display: block; font-size: 13px; color: var(--hint-color); margin-bottom: 5px; }
         input, select {
             width: 100%;
             padding: 12px;
@@ -63,11 +66,13 @@
             color: var(--text-color);
             font-size: 15px;
             box-sizing: border-box;
+            outline: none;
         }
+        input:focus { border-color: var(--primary-color); }
         
-        /* Тарифы */
-        .tariffs { display: flex; gap: 10px; margin-bottom: 16px; }
-        .tariff-card {
+        /* Карточки тарифов и оплаты */
+        .tariffs, .payment-options { display: flex; gap: 10px; margin-bottom: 16px; }
+        .tariff-card, .pay-card {
             flex: 1;
             background: var(--card-bg);
             border: 2px solid transparent;
@@ -77,20 +82,23 @@
             cursor: pointer;
             transition: 0.2s;
         }
-        .tariff-card.selected { border-color: var(--primary-color); background: rgba(36, 129, 204, 0.1); }
-        .tariff-title { font-weight: bold; font-size: 14px; margin-bottom: 4px; }
-        .tariff-price { font-size: 13px; color: var(--hint-color); }
+        .tariff-card.selected, .pay-card.selected { border-color: var(--primary-color); background: rgba(36, 129, 204, 0.1); }
+        .tariff-title, .pay-title { font-weight: bold; font-size: 14px; margin-bottom: 4px; }
+        .tariff-price, .pay-desc { font-size: 12px; color: var(--hint-color); }
 
+        /* Блок стоимости */
         .price-box {
             background: var(--card-bg);
-            padding: 12px;
+            padding: 14px;
             border-radius: 10px;
             text-align: center;
             font-size: 16px;
             font-weight: bold;
             margin-bottom: 16px;
+            border: 1px dashed var(--hint-color);
         }
 
+        /* Кнопка действия */
         button.main-btn {
             background-color: var(--primary-color);
             color: var(--primary-text);
@@ -102,18 +110,22 @@
             font-weight: bold;
             cursor: pointer;
             margin-top: 10px;
+            transition: opacity 0.2s;
         }
+        button.main-btn:active { opacity: 0.8; }
+        
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <!-- Виджет даты и времени -->
+    <!-- Виджет текущего времени и даты -->
     <div class="datetime-widget">
         <span id="current-date">--.--.----</span>
         <span id="current-time">--:--:--</span>
     </div>
 
-    <!-- Переключение режимов -->
+    <!-- Переключение режимов (Пассажир / Водитель) -->
     <div class="tabs">
         <div class="tab active" onclick="switchTab('passenger')">Пассажир</div>
         <div class="tab" onclick="switchTab('driver')">Водитель</div>
@@ -121,21 +133,21 @@
 
     <!-- ПАССАЖИРСКИЙ РЕЖИМ -->
     <div id="passenger-section" class="section active">
-        <h2>Заказ такси</h2>
+        <h2>Заказ такси в Самаре</h2>
         
-        <!-- Интерактивная карта Яндекса -->
+        <!-- Интерактивная карта -->
         <div id="map"></div>
 
         <div class="form-group">
-            <label>Откуда:</label>
-            <input type="text" id="from-address" placeholder="Кликните на карту или выберите точку" readonly>
+            <label>Откуда (напишите или кликните на карту):</label>
+            <input type="text" id="from-address" placeholder="Например: Ново-Садовая 106">
         </div>
         <div class="form-group">
-            <label>Куда:</label>
-            <input type="text" id="to-address" placeholder="Кликните на карту для выбора точки назначения" readonly>
+            <label>Куда (напишите или кликните на карту):</label>
+            <input type="text" id="to-address" placeholder="Например: Полевая 15">
         </div>
 
-        <label>Выберите тариф:</label>
+        <label>Тариф поездки:</label>
         <div class="tariffs">
             <div class="tariff-card selected" id="tariff-eco" onclick="setTariff('eco')">
                 <div class="tariff-title">Эконом</div>
@@ -147,7 +159,31 @@
             </div>
         </div>
 
-        <div class="price-box" id="price-display">Стоимость: выберите маршрут на карте</div>
+        <label>Способ оплаты:</label>
+        <div class="payment-options">
+            <div class="pay-card selected" id="pay-transfer" onclick="setPayment('transfer')">
+                <div class="pay-title">Перевод</div>
+                <div class="pay-desc">По номеру водителя</div>
+            </div>
+            <div class="pay-card" id="pay-cash" onclick="setPayment('cash')">
+                <div class="pay-title">Наличные</div>
+                <div class="pay-desc">Оплата водителю</div>
+            </div>
+        </div>
+
+        <!-- Динамический блок для перевода (показывает номер телефона водителя) -->
+        <div class="form-group" id="transfer-info-box">
+            <label>Номер для перевода водителю:</label>
+            <input type="text" id="driver-phone-display" value="+7 (999) 000-00-00 (уточняется)" readonly style="color: var(--primary-color); font-weight: bold;">
+        </div>
+
+        <!-- Динамический блок для наличных (сдача) -->
+        <div class="form-group hidden" id="cash-change-box">
+            <label>С какой купюры потребуется сдача?</label>
+            <input type="text" id="cash-change" placeholder="Например: с 1000 рублей или без сдачи">
+        </div>
+
+        <div class="price-box" id="price-display">Стоимость: введите адреса или выберите точки</div>
 
         <button class="main-btn" onclick="sendOrder()">Заказать такси</button>
     </div>
@@ -155,26 +191,32 @@
     <!-- РЕЖИМ ВОДИТЕЛЯ -->
     <div id="driver-section" class="section">
         <h2>Регистрация водителя</h2>
+        
         <div class="form-group">
-            <label>ФИО:</label>
+            <label>ФИО водителя:</label>
             <input type="text" id="driver-name" placeholder="Иванов Иван Иванович">
         </div>
         <div class="form-group">
-            <label>Телефон:</label>
-            <input type="tel" id="driver-phone" placeholder="+7 (999) 000-00-00">
+            <label>Номер телефона (будет указан для переводов):</label>
+            <input type="tel" id="driver-phone" placeholder="+7 (999) 000-00-00" oninput="updateDriverPhonePreview()">
         </div>
         <div class="form-group">
-            <label>Марка и модель авто:</label>
+            <label>Марка и модель автомобиля:</label>
             <input type="text" id="driver-car" placeholder="Lada Vesta / Kia Rio">
         </div>
         <div class="form-group">
-            <label>Гос. номер:</label>
+            <label>Государственный номер:</label>
             <input type="text" id="driver-number" placeholder="А123ВС63">
         </div>
         <div class="form-group">
-            <label>Фото водительского удостоверения и СТС:</label>
+            <label>Примерное время прибытия к клиенту (минут):</label>
+            <input type="number" id="driver-eta" placeholder="Например: 7" min="1" max="60">
+        </div>
+        <div class="form-group">
+            <label>Фото документов (права, СТС):</label>
             <input type="file" id="driver-docs" multiple accept="image/*">
         </div>
+
         <button class="main-btn" onclick="sendDriverRegistration()">Отправить на проверку</button>
     </div>
 
@@ -182,7 +224,7 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Часы и дата
+        // Инициализация часов и даты
         function updateDateTime() {
             const now = new Date();
             document.getElementById('current-date').innerText = now.toLocaleDateString('ru-RU');
@@ -191,7 +233,7 @@
         setInterval(updateDateTime, 1000);
         updateDateTime();
 
-        // Переключение вкладок
+        // Управление вкладками интерфейса
         function switchTab(role) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -204,17 +246,41 @@
             }
         }
 
-        // Логика карты и тарифов
+        // Логика выбора оплаты
+        let currentPayment = 'transfer';
+        function setPayment(type) {
+            currentPayment = type;
+            document.getElementById('pay-transfer').classList.toggle('selected', type === 'transfer');
+            document.getElementById('pay-cash').classList.toggle('selected', type === 'cash');
+
+            if (type === 'transfer') {
+                document.getElementById('transfer-info-box').classList.remove('hidden');
+                document.getElementById('cash-change-box').classList.add('hidden');
+            } else {
+                document.getElementById('transfer-info-box').classList.add('hidden');
+                document.getElementById('cash-change-box').classList.remove('hidden');
+            }
+        }
+
+        // Автоматическое обновление номера телефона водителя для перевода
+        function updateDriverPhonePreview() {
+            let phone = document.getElementById('driver-phone').value;
+            if (phone.trim() !== '') {
+                document.getElementById('driver-phone-display').value = phone;
+            }
+        }
+
+        // Логика карты, геокодинга и тарифов
         let map, fromCoord = null, toCoord = null, routeLengthKm = 0;
         let currentTariff = 'eco'; 
-        const basePrice = 150; // Оптимальная посадка 150 руб
-        const tariffRates = { eco: 15, comfort: 20 }; // 15 руб/км и 20 руб/км
+        const basePrice = 150; 
+        const tariffRates = { eco: 15, comfort: 20 };
 
         ymaps.ready(initMap);
 
         function initMap() {
             map = new ymaps.Map("map", {
-                center: [53.1955, 50.1018], // Самара
+                center: [53.1955, 50.1018], 
                 zoom: 12,
                 controls: ['zoomControl', 'geolocationControl']
             });
@@ -224,17 +290,17 @@
                 
                 if (!fromCoord) {
                     fromCoord = coords;
-                    getAddress(coords, 'from-address', 'Откуда (точка А)');
+                    getAddress(coords, 'from-address', 'Откуда');
                 } else if (!toCoord) {
                     toCoord = coords;
-                    getAddress(coords, 'to-address', 'Куда (точка Б)');
-                    calculateRoute(); 
+                    getAddress(coords, 'to-address', 'Куда');
+                    calculateRouteByCoords(); 
                 } else {
                     fromCoord = coords;
                     toCoord = null;
                     document.getElementById('to-address').value = '';
                     document.getElementById('price-display').innerText = 'Стоимость: выберите точку назначения';
-                    getAddress(coords, 'from-address', 'Откуда (точка А)');
+                    getAddress(coords, 'from-address', 'Откуда');
                     if (window.routeMultiRoute) {
                         map.geoObjects.remove(window.routeMultiRoute);
                     }
@@ -257,7 +323,7 @@
             if (routeLengthKm > 0) calculatePrice();
         }
 
-        function calculateRoute() {
+        function calculateRouteByCoords() {
             if (!fromCoord || !toCoord) return;
 
             if (window.routeMultiRoute) {
@@ -289,35 +355,51 @@
             document.getElementById('price-display').innerText = `Расстояние: ${routeLengthKm.toFixed(1)} км | Итого: ${Math.round(total)} ₽`;
         }
 
+        // Отправка заказа в Telegram
         function sendOrder() {
             let from = document.getElementById('from-address').value;
             let to = document.getElementById('to-address').value;
             
-            if (!from || !to || routeLengthKm === 0) {
-                alert('Пожалуйста, выберите точки отправления и назначения на карте!');
+            if (!from || !to) {
+                alert('Пожалуйста, укажите адреса отправления и назначения!');
                 return;
             }
+
+            if (routeLengthKm === 0) {
+                routeLengthKm = 5; 
+            }
+
+            let ratePerKm = tariffRates[currentTariff];
+            let total = basePrice + (routeLengthKm * ratePerKm);
+            let priceText = `Расстояние: ~${routeLengthKm.toFixed(1)} км | Итого: ${Math.round(total)} ₽`;
+
+            let paymentInfo = currentPayment === 'transfer' 
+                ? `Перевод по номеру: ${document.getElementById('driver-phone-display').value}` 
+                : `Наличные (сдача: ${document.getElementById('cash-change').value || 'без указания'})`;
 
             let data = {
                 action: 'new_order',
                 from: from,
                 to: to,
                 tariff: currentTariff === 'eco' ? 'Эконом (15 ₽/км)' : 'Комфорт (20 ₽/км)',
-                price: document.getElementById('price-display').innerText,
+                payment: paymentInfo,
+                price: priceText,
                 time: new Date().toLocaleTimeString()
             };
 
             tg.sendData(JSON.stringify(data));
         }
 
+        // Отправка заявки водителя в Telegram
         function sendDriverRegistration() {
             let name = document.getElementById('driver-name').value;
             let phone = document.getElementById('driver-phone').value;
             let car = document.getElementById('driver-car').value;
             let carNumber = document.getElementById('driver-number').value;
+            let eta = document.getElementById('driver-eta').value || '5';
 
             if (!name || !phone || !car || !carNumber) {
-                alert('Заполните все поля анкеты!');
+                alert('Заполните все обязательные поля анкеты!');
                 return;
             }
 
@@ -327,6 +409,7 @@
                 phone: phone,
                 car: car,
                 carNumber: carNumber,
+                eta: eta + ' мин.',
                 rating: 5.00
             };
 
