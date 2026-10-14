@@ -2,692 +2,413 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Такси Самара</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Самара Такси - Полная версия</title>
+    <!-- Подключаем Telegram Web App API -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://api-maps.yandex.ru/2.1/?apikey=ваш_api_ключ&lang=ru_RU" type="text/javascript"></script>
     <style>
         :root {
-            --primary-color: var(--tg-theme-button-color, #2481cc);
-            --primary-text: var(--tg-theme-button-text-color, #ffffff);
-            --bg-color: var(--tg-theme-bg-color, #1f2125);
-            --card-bg: var(--tg-theme-secondary-bg-color, #2b2f36);
-            --text-color: var(--tg-theme-text-color, #ffffff);
-            --hint-color: var(--tg-theme-hint-color, #999999);
-            --success-color: #4cd964;
+            --tg-theme-bg-color: #ffffff;
+            --tg-theme-text-color: #000000;
+            --tg-theme-hint-color: #999999;
+            --tg-theme-button-color: #2481cc;
+            --tg-theme-button-text-color: #ffffff;
         }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            background-color: var(--tg-theme-bg-color, #f4f4f5);
+            color: var(--tg-theme-text-color, #222);
             margin: 0;
             padding: 16px;
-            box-sizing: border-box;
-            -webkit-user-select: text;
-            user-select: text;
-        }
-        h2 { text-align: center; margin-bottom: 15px; font-size: 20px; }
-        
-        .tabs { display: flex; background: var(--card-bg); border-radius: 12px; padding: 4px; margin-bottom: 16px; }
-        .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; border-radius: 8px; font-weight: 600; font-size: 14px; transition: 0.3s; }
-        .tab.active { background: var(--primary-color); color: var(--primary-text); }
-        .section { display: none; }
-        .section.active { display: block; }
-        
-        .datetime-widget {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 10px 16px;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
             align-items: center;
-            margin-bottom: 16px;
-            font-size: 14px;
-            font-weight: 500;
         }
 
-        #map {
+        .container {
             width: 100%;
-            height: 220px;
-            border-radius: 12px;
-            margin-bottom: 16px;
-            touch-action: pan-x pan-y;
+            max-width: 420px;
+            background: var(--tg-theme-bg-color, #ffffff);
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            box-sizing: border-box;
         }
 
-        .form-group { margin-bottom: 14px; position: relative; z-index: 10; }
-        label { display: block; font-size: 13px; color: var(--hint-color); margin-bottom: 5px; }
+        h2 {
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--tg-theme-text-color, #111);
+        }
+
+        /* Переключатель ролей */
+        .role-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            background: #f0f2f5;
+            padding: 4px;
+            border-radius: 12px;
+        }
+
+        .role-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            color: #666;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .role-btn.active {
+            background: var(--tg-theme-button-color, #2481cc);
+            color: #fff;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--tg-theme-hint-color, #666);
+        }
+
         input, select {
             width: 100%;
-            padding: 14px;
+            padding: 12px 14px;
+            border: 1px solid #ddd;
             border-radius: 10px;
-            border: 1px solid var(--card-bg);
-            background: var(--card-bg);
-            color: var(--text-color);
             font-size: 16px;
             box-sizing: border-box;
+            background: transparent;
+            color: inherit;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--tg-theme-button-color, #2481cc);
             outline: none;
-            -webkit-appearance: none;
-        }
-        input:focus { border-color: var(--primary-color); background: #23262b; }
-        
-        /* Блок звуковых оповещений */
-        .sound-toggle-box {
-            background: var(--card-bg);
-            border-radius: 10px;
-            padding: 12px 14px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 16px;
-            border: 1px solid transparent;
-            transition: 0.3s;
-        }
-        .sound-toggle-box.active {
-            border-color: var(--success-color);
-            background: rgba(76, 217, 100, 0.08);
-        }
-        .sound-info { display: flex; flex-direction: column; gap: 2px; }
-        .sound-title { font-size: 14px; font-weight: bold; }
-        .sound-desc { font-size: 12px; color: var(--hint-color); }
-
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 48px;
-            height: 26px;
-            flex-shrink: 0;
-        }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider {
-            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #555; transition: .3s; border-radius: 26px;
-        }
-        .slider:before {
-            position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px;
-            background-color: white; transition: .3s; border-radius: 50%;
-        }
-        input:checked + .slider { background-color: var(--success-color); }
-        input:checked + .slider:before { transform: translateX(22px); }
-
-        .tariffs, .payment-options { display: flex; gap: 10px; margin-bottom: 16px; }
-        .tariff-card, .pay-card {
-            flex: 1;
-            background: var(--card-bg);
-            border: 2px solid transparent;
-            border-radius: 10px;
-            padding: 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .tariff-card.selected, .pay-card.selected { border-color: var(--primary-color); background: rgba(36, 129, 204, 0.1); }
-        .tariff-title, .pay-title { font-weight: bold; font-size: 14px; margin-bottom: 4px; }
-        .tariff-price, .pay-desc { font-size: 12px; color: var(--hint-color); }
-
-        .price-box {
-            background: var(--card-bg);
-            padding: 14px;
-            border-radius: 10px;
-            text-align: center;
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 16px;
-            border: 1px dashed var(--hint-color);
         }
 
-        button.main-btn {
-            background-color: var(--primary-color);
-            color: var(--primary-text);
-            border: none;
+        .btn {
             width: 100%;
             padding: 14px;
-            border-radius: 12px;
+            background-color: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #fff);
+            border: none;
+            border-radius: 10px;
             font-size: 16px;
-            font-weight: bold;
+            font-weight: 600;
             cursor: pointer;
             margin-top: 10px;
             transition: opacity 0.2s;
         }
-        button.main-btn:active { opacity: 0.8; }
-        
-        .step-container { display: none; }
-        .step-container.active { display: block; }
-        
-        .step-indicator {
-            text-align: center;
-            font-size: 13px;
-            color: var(--hint-color);
-            margin-bottom: 10px;
+
+        .btn:active {
+            opacity: 0.8;
         }
 
-        .camera-box {
-            width: 100%;
-            height: 280px;
-            background: #000;
+        .hidden {
+            display: none;
+        }
+
+        /* Карточка информации о назначенном водителе */
+        .driver-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
             border-radius: 12px;
-            overflow: hidden;
-            position: relative;
-            margin-bottom: 10px;
+            padding: 16px;
+            margin-top: 20px;
         }
-        video, canvas {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        canvas { display: none; }
 
-        .hidden { display: none; }
+        .driver-card-title {
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .driver-info-row {
+            font-size: 14px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .driver-info-value {
+            font-weight: 600;
+            color: #2481cc;
+        }
+
+        /* Блок стикеров и быстрой обратной связи */
+        .feedback-section {
+            margin-top: 24px;
+            border-top: 1px solid #eee;
+            padding-top: 16px;
+            text-align: center;
+        }
+
+        .feedback-title {
+            font-size: 13px;
+            color: var(--tg-theme-hint-color, #666);
+            margin-bottom: 12px;
+        }
+
+        .sticker-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .sticker-btn {
+            background: #f0f2f5;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 6px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            transition: transform 0.1s, background 0.2s;
+        }
+
+        .sticker-btn:active {
+            transform: scale(0.95);
+            background: #e4e6eb;
+        }
+
+        .sticker-emoji {
+            font-size: 20px;
+        }
+
+        .sticker-text {
+            font-size: 11px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .info-note {
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+            margin-top: 15px;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
 
-    <div class="datetime-widget">
-        <span id="current-date">--.--.----</span>
-        <span id="current-time">--:--:--</span>
-    </div>
+    <div class="container">
+        <h2>🚖 Такси Самара</h2>
 
-    <div class="tabs">
-        <div class="tab active" onclick="switchTab('passenger')">Пассажир</div>
-        <div class="tab" onclick="switchTab('driver')">Водитель</div>
-    </div>
-
-    <!-- ПАССАЖИРСКИЙ РЕЖИМ -->
-    <div id="passenger-section" class="section active">
-        <h2>Заказ такси в Самаре</h2>
-        
-        <div id="map"></div>
-
-        <div class="form-group">
-            <label>Откуда:</label>
-            <input type="text" id="from-address" placeholder="Например: Ново-Садовая 106">
-        </div>
-        <div class="form-group">
-            <label>Куда:</label>
-            <input type="text" id="to-address" placeholder="Например: Полевая 15">
+        <!-- Переключатель роли: Пассажир / Водитель -->
+        <div class="role-selector">
+            <button class="role-btn active" id="passengerRoleBtn" onclick="switchRole('passenger')">Пассажир</button>
+            <button class="role-btn" id="driverRoleBtn" onclick="switchRole('driver')">Водитель</button>
         </div>
 
-        <label>Тариф поездки:</label>
-        <div class="tariffs">
-            <div class="tariff-card selected" id="tariff-eco" onclick="setTariff('eco')">
-                <div class="tariff-title">Эконом</div>
-                <div class="tariff-price">15 ₽/км</div>
-            </div>
-            <div class="tariff-card" id="tariff-comfort" onclick="setTariff('comfort')">
-                <div class="tariff-title">Комфорт</div>
-                <div class="tariff-price">20 ₽/км</div>
-            </div>
-        </div>
-
-        <label>Способ оплаты:</label>
-        <div class="payment-options">
-            <div class="pay-card selected" id="pay-transfer" onclick="setPayment('transfer')">
-                <div class="pay-title">Перевод</div>
-                <div class="pay-desc">По номеру водителя</div>
-            </div>
-            <div class="pay-card" id="pay-cash" onclick="setPayment('cash')">
-                <div class="pay-title">Наличные</div>
-                <div class="pay-desc">Оплата водителю</div>
-            </div>
-        </div>
-
-        <div class="form-group" id="transfer-info-box">
-            <label>Номер для перевода водителю:</label>
-            <input type="text" id="driver-phone-display" value="+7 (999) 000-00-00 (уточняется)" readonly style="color: var(--primary-color); font-weight: bold;">
-        </div>
-
-        <div class="form-group hidden" id="cash-change-box">
-            <label>С какой купюры потребуется сдача?</label>
-            <input type="text" id="cash-change" placeholder="Например: с 1000 рублей или без сдачи">
-        </div>
-
-        <div class="price-box" id="price-display">Стоимость: введите адреса или выберите точки</div>
-
-        <button class="main-btn" onclick="sendOrder()">Заказать такси</button>
-    </div>
-
-    <!-- РЕЖИМ ВОДИТЕЛЯ -->
-    <div id="driver-section" class="section">
-        <h2>Регистрация водителя</h2>
-        <div class="step-indicator" id="step-indicator">Шаг 1 из 10</div>
-
-        <div class="step-container active" id="step-1">
+        <!-- ================= ИНТЕРФЕЙС ПАССАЖИРА ================= -->
+        <div id="passengerView">
             <div class="form-group">
-                <label>ФИО водителя:</label>
-                <input type="text" id="driver-name" placeholder="Иванов Иван Иванович">
-            </div>
-            <div class="form-group">
-                <label>Номер телефона (для переводов):</label>
-                <input type="tel" id="driver-phone" placeholder="+7 (999) 000-00-00" oninput="updateDriverPhonePreview()">
-            </div>
-            <div class="form-group">
-                <label>Марка и модель автомобиля:</label>
-                <input type="text" id="driver-car" placeholder="Lada Vesta / Kia Rio">
-            </div>
-            <div class="form-group">
-                <label>Государственный номер:</label>
-                <input type="text" id="driver-number" placeholder="А123ВС63" oninput="this.value = this.value.toUpperCase()">
+                <label for="phone">Номер телефона</label>
+                <input type="tel" id="phone" value="+7 " placeholder="+7 (___) ___-__-__">
             </div>
 
-            <!-- ВКЛЮЧЕНИЕ ЗВУКОВЫХ ОПОВЕЩЕНИЙ -->
-            <div class="sound-toggle-box" id="sound-box">
-                <div class="sound-info">
-                    <span class="sound-title">🔊 Звуковые оповещения</span>
-                    <span class="sound-desc">Обязательно для получения новых заказов</span>
+            <div class="form-group">
+                <label for="from">Откуда забрать</label>
+                <input type="text" id="from" placeholder="Улица, дом, ориентир">
+            </div>
+
+            <div class="form-group">
+                <label for="to">Куда едем</label>
+                <input type="text" id="to" placeholder="Адрес назначения в Самаре">
+            </div>
+
+            <div class="form-group">
+                <label for="comment">Пожелания к поездке (необязательно)</label>
+                <input type="text" id="comment" placeholder="Детское кресло, багаж, тишина">
+            </div>
+
+            <button class="btn" id="orderBtn">Заказать такси</button>
+
+            <!-- Карточка водителя для пассажира -->
+            <div class="driver-card" id="driverCard">
+                <div class="driver-card-title">👨‍✈️ Информация о водителе:</div>
+                <div class="driver-info-row"><span>Статус:</span> <span class="driver-info-value" id="dStatus">Поиск водителя...</span></div>
+                <div class="driver-info-row"><span>Имя:</span> <span class="driver-info-value" id="dName">—</span></div>
+                <div class="driver-info-row"><span>Автомобиль:</span> <span class="driver-info-value" id="dCar">—</span></div>
+                <div class="driver-info-row"><span>Госномер:</span> <span class="driver-info-value" id="dNumber">—</span></div>
+                <div class="driver-info-row"><span>Гражданство / Регион:</span> <span class="driver-info-value" id="dNationality">—</span></div>
+            </div>
+
+            <!-- Блок стикеров обратной связи и предложений -->
+            <div class="feedback-section">
+                <div class="feedback-title">Оцените поездку или отправьте пожелание:</div>
+                <div class="sticker-grid">
+                    <button class="sticker-btn" onclick="sendFeedback('⭐️ Отличная поездка!')">
+                        <span class="sticker-emoji">⭐</span>
+                        <span class="sticker-text">Отлично</span>
+                    </button>
+                    <button class="sticker-btn" onclick="sendFeedback('💬 Чего не хватает в приложении...')">
+                        <span class="sticker-emoji">💡</span>
+                        <span class="sticker-text">Идея / Улучшить</span>
+                    </button>
+                    <button class="sticker-btn" onclick="sendFeedback('⚠️ Сообщить о проблеме')">
+                        <span class="sticker-emoji">⚠️</span>
+                        <span class="sticker-text">Проблема</span>
+                    </button>
                 </div>
-                <label class="switch">
-                    <input type="checkbox" id="driver-sound-toggle" onchange="toggleSoundAlerts(this)">
-                    <span class="slider"></span>
-                </label>
             </div>
-
-            <button class="main-btn" onclick="nextStep(2)">Далее →</button>
         </div>
 
-        <!-- ШАГИ КАМЕРЫ (2 - 10) -->
-        <div class="step-container" id="step-2">
-            <label id="cam-label-2">Селфи водителя (лицо):</label>
-            <div class="camera-box">
-                <video id="video-2" autoplay playsinline></video>
-                <canvas id="canvas-2"></canvas>
+        <!-- ================= ИНТЕРФЕЙС ВОДИТЕЛЯ ================= -->
+        <div id="driverView" class="hidden">
+            <h3 style="font-size: 16px; margin-top: 0; margin-bottom: 15px; color: #2481cc; text-align: center;">Регистрация водителя</h3>
+            
+            <div class="form-group">
+                <label for="driverName">Ваше имя</label>
+                <input type="text" id="driverName" placeholder="Например: Тимур">
             </div>
-            <button class="main-btn" onclick="takePhoto(2)">📸 Сделать снимок</button>
-            <div id="status-2" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
-            <button class="main-btn hidden" id="next-btn-2" onclick="nextStep(3)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
-        </div>
 
-        <div class="step-container" id="step-3">
-            <label id="cam-label-3">Права — Лицевая сторона:</label>
-            <div class="camera-box">
-                <video id="video-3" autoplay playsinline></video>
-                <canvas id="canvas-3"></canvas>
+            <div class="form-group">
+                <label for="driverCar">Марка, модель и цвет машины</label>
+                <input type="text" id="driverCar" placeholder="Kia Rio, белый седан">
             </div>
-            <button class="main-btn" onclick="takePhoto(3)">📸 Сделать снимок</button>
-            <div id="status-3" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
-            <button class="main-btn hidden" id="next-btn-3" onclick="nextStep(4)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
-        </div>
 
-        <div class="step-container" id="step-4">
-            <label id="cam-label-4">Права — Оборотная сторона:</label>
-            <div class="camera-box">
-                <video id="video-4" autoplay playsinline></video>
-                <canvas id="canvas-4"></canvas>
+            <div class="form-group">
+                <label for="driverNumber">Госномер автомобиля</label>
+                <input type="text" id="driverNumber" placeholder="А123БВ 163">
             </div>
-            <button class="main-btn" onclick="takePhoto(4)">📸 Сделать снимок</button>
-            <div id="status-4" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
-            <button class="main-btn hidden" id="next-btn-4" onclick="nextStep(5)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
-        </div>
 
-        <div class="step-container" id="step-5">
-            <label id="cam-label-5">СТС — Лицевая сторона:</label>
-            <div class="camera-box">
-                <video id="video-5" autoplay playsinline></video>
-                <canvas id="canvas-5"></canvas>
+            <div class="form-group">
+                <label for="driverNationality">Национальность / Регион происхождения</label>
+                <select id="driverNationality">
+                    <option value="Русский">Русский</option>
+                    <option value="Татарин">Татарин</option>
+                    <option value="Башкир">Башкир</option>
+                    <option value="Армянин">Армянин</option>
+                    <option value="Азербайджанец">Азербайджанец</option>
+                    <option value="Узбек">Узбек</option>
+                    <option value="Таджик">Таджик</option>
+                    <option value="Казах">Казах</option>
+                    <option value="Другое">Другое</option>
+                </select>
             </div>
-            <button class="main-btn" onclick="takePhoto(5)">📸 Сделать снимок</button>
-            <div id="status-5" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
-            <button class="main-btn hidden" id="next-btn-5" onclick="nextStep(6)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
-        </div>
 
-        <div class="step-container" id="step-6">
-            <label id="cam-label-6">СТС — Оборотная сторона:</label>
-            <div class="camera-box">
-                <video id="video-6" autoplay playsinline></video>
-                <canvas id="canvas-6"></canvas>
+            <div class="form-group">
+                <label for="driverPhone">Номер телефона водителя</label>
+                <input type="tel" id="driverPhone" value="+7 " placeholder="+7...">
             </div>
-            <button class="main-btn" onclick="takePhoto(6)">📸 Сделать снимок</button>
-            <div id="status-6" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
-            <button class="main-btn hidden" id="next-btn-6" onclick="nextStep(7)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
-        </div>
 
-        <div class="step-container" id="step-7">
-            <label id="cam-label-7">Фото автомобиля — Спереди:</label>
-            <div class="camera-box">
-                <video id="video-7" autoplay playsinline></video>
-                <canvas id="canvas-7"></canvas>
-            </div>
-            <button class="main-btn" onclick="takePhoto(7)">📸 Сделать снимок</button>
-            <div id="status-7" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
-            <button class="main-btn hidden" id="next-btn-7" onclick="nextStep(8)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
-        </div>
-
-        <div class="step-container" id="step-8">
-            <label id="cam-label-8">Фото автомобиля — Сзади:</label>
-            <div class="camera-box">
-                <video id="video-8" autoplay playsinline></video>
-                <canvas id="canvas-8"></canvas>
-            </div>
-            <button class="main-btn" onclick="takePhoto(8)">📸 Сделать снимок</button>
-            <div id="status-8" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
-            <button class="main-btn hidden" id="next-btn-8" onclick="nextStep(9)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
-        </div>
-
-        <div class="step-container" id="step-9">
-            <label id="cam-label-9">Фото автомобиля — Справа:</label>
-            <div class="camera-box">
-                <video id="video-9" autoplay playsinline></video>
-                <canvas id="canvas-9"></canvas>
-            </div>
-            <button class="main-btn" onclick="takePhoto(9)">📸 Сделать снимок</button>
-            <div id="status-9" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
-            <button class="main-btn hidden" id="next-btn-9" onclick="nextStep(10)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
-        </div>
-
-        <div class="step-container" id="step-10">
-            <label id="cam-label-10">Фото автомобиля — Слева:</label>
-            <div class="camera-box">
-                <video id="video-10" autoplay playsinline></video>
-                <canvas id="canvas-10"></canvas>
-            </div>
-            <button class="main-btn" onclick="takePhoto(10)">📸 Сделать снимок</button>
-            <div id="status-10" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
-            <button class="main-btn hidden" id="next-btn-10" onclick="sendDriverRegistration()" style="background: #4cd964; margin-top: 8px;">Завершить регистрацию 🚀</button>
+            <button class="btn" id="saveDriverBtn">Сохранить анкету и выйти на линию</button>
+            <div class="info-note">После сохранения данные поступят в систему бота для подтверждения выезда на заказы в Самаре.</div>
         </div>
 
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp;
+        // Инициализация Telegram Web App
+        let tg = window.Telegram.WebApp;
         tg.expand();
+        tg.ready();
 
-        let currentActiveStream = null;
-        let driverPhotos = {};
-        let audioEnabled = false;
+        // Переключение между интерфейсами пассажира и водителя
+        function switchRole(role) {
+            let pView = document.getElementById('passengerView');
+            let dView = document.getElementById('driverView');
+            let pBtn = document.getElementById('passengerRoleBtn');
+            let dBtn = document.getElementById('driverRoleBtn');
 
-        document.querySelectorAll('input').forEach(input => {
-            input.addEventListener('touchstart', (e) => { e.stopPropagation(); });
-            input.addEventListener('click', (e) => { e.stopPropagation(); input.focus(); });
-        });
-
-        function updateDateTime() {
-            const now = new Date();
-            document.getElementById('current-date').innerText = now.toLocaleDateString('ru-RU');
-            document.getElementById('current-time').innerText = now.toLocaleTimeString('ru-RU');
-        }
-        setInterval(updateDateTime, 1000);
-        updateDateTime();
-
-        function switchTab(role) {
-            stopCurrentCamera();
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             if (role === 'passenger') {
-                document.querySelectorAll('.tab')[0].classList.add('active');
-                document.getElementById('passenger-section').classList.add('active');
+                pView.classList.remove('hidden');
+                dView.classList.add('hidden');
+                pBtn.classList.add('active');
+                dBtn.classList.remove('active');
             } else {
-                document.querySelectorAll('.tab')[1].classList.add('active');
-                document.getElementById('driver-section').classList.add('active');
-                if (currentStep > 1) {
-                    startCamera(currentStep, (currentStep === 2) ? 'user' : 'environment');
-                }
+                pView.classList.add('hidden');
+                dView.classList.remove('hidden');
+                pBtn.classList.remove('active');
+                dBtn.classList.add('active');
             }
         }
 
-        // Воспроизведение тестового звукового сигнала
-        function playTestBeep() {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(880, audioCtx.currentTime); // Тон 880Hz (ля)
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.2); // Звук длится 0.2 сек
-            } catch (e) {
-                console.warn('Не удалось воспроизвести тестовый звук:', e);
+        // Обработка заказа такси пассажиром
+        document.getElementById('orderBtn').addEventListener('click', function() {
+            let phone = document.getElementById('phone').value;
+            let from = document.getElementById('from').value;
+            let to = document.getElementById('to').value;
+            let comment = document.getElementById('comment').value;
+
+            if (!phone || phone.length < 5) {
+                alert('Пожалуйста, укажите корректный номер телефона');
+                return;
             }
-        }
-
-        function toggleSoundAlerts(checkbox) {
-            const box = document.getElementById('sound-box');
-            audioEnabled = checkbox.checked;
-            box.classList.toggle('active', audioEnabled);
-            
-            if (audioEnabled) {
-                playTestBeep();
-            }
-        }
-
-        let currentStep = 1;
-        function nextStep(step) {
-            if (step === 2) {
-                let name = document.getElementById('driver-name').value.trim();
-                let phone = document.getElementById('driver-phone').value.trim();
-                let car = document.getElementById('driver-car').value.trim();
-                let carNumber = document.getElementById('driver-number').value.trim();
-                
-                if (!name || !phone || !car || !carNumber) {
-                    alert('Пожалуйста, заполните все текстовые поля!');
-                    return;
-                }
-
-                if (!audioEnabled) {
-                    alert('Для работы водителем необходимо включить звуковые оповещения!');
-                    return;
-                }
-            }
-
-            stopCurrentCamera();
-
-            document.querySelectorAll('.step-container').forEach(el => el.classList.remove('active'));
-            document.getElementById(`step-${step}`).classList.add('active');
-            document.getElementById('step-indicator').innerText = `Шаг ${step} из 10`;
-            currentStep = step;
-
-            let facing = (step === 2) ? 'user' : 'environment';
-            startCamera(step, facing);
-        }
-
-        function stopCurrentCamera() {
-            if (currentActiveStream) {
-                currentActiveStream.getTracks().forEach(track => track.stop());
-                currentActiveStream = null;
-            }
-        }
-
-        async function startCamera(step, facingMode) {
-            stopCurrentCamera();
-            try {
-                let video = document.getElementById(`video-${step}`);
-                let canvas = document.getElementById(`canvas-${step}`);
-                
-                video.classList.remove('hidden');
-                canvas.classList.add('hidden');
-
-                let stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
-                    audio: false
-                });
-                
-                currentActiveStream = stream;
-                video.srcObject = stream;
-            } catch (err) {
-                console.error("Ошибка доступа к камере: ", err);
-                alert("Не удалось получить доступ к камере. Убедитесь, что разрешили доступ в настройках.");
-            }
-        }
-
-        function takePhoto(step) {
-            let video = document.getElementById(`video-${step}`);
-            let canvas = document.getElementById(`canvas-${step}`);
-            let context = canvas.getContext('2d');
-
-            canvas.width = video.videoWidth || 640;
-            canvas.height = video.videoHeight || 480;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            driverPhotos[`step_${step}`] = canvas.toDataURL('image/jpeg', 0.6);
-
-            stopCurrentCamera();
-
-            video.classList.add('hidden');
-            canvas.classList.remove('hidden');
-
-            document.getElementById(`status-${step}`).innerText = "✅ Снимок успешно сделан!";
-            document.getElementById(`status-${step}`).style.color = "#4cd964";
-            document.getElementById(`next-btn-${step}`).classList.remove('hidden');
-        }
-
-        let currentPayment = 'transfer';
-        function setPayment(type) {
-            currentPayment = type;
-            document.getElementById('pay-transfer').classList.toggle('selected', type === 'transfer');
-            document.getElementById('pay-cash').classList.toggle('selected', type === 'cash');
-
-            if (type === 'transfer') {
-                document.getElementById('transfer-info-box').classList.remove('hidden');
-                document.getElementById('cash-change-box').classList.add('hidden');
-            } else {
-                document.getElementById('transfer-info-box').classList.add('hidden');
-                document.getElementById('cash-change-box').classList.remove('hidden');
-            }
-        }
-
-        function updateDriverPhonePreview() {
-            let phone = document.getElementById('driver-phone').value;
-            if (phone.trim() !== '') {
-                document.getElementById('driver-phone-display').value = phone;
-            }
-        }
-
-        let map, fromCoord = null, toCoord = null, routeLengthKm = 0;
-        let currentTariff = 'eco'; 
-        const basePrice = 150; 
-        const tariffRates = { eco: 15, comfort: 20 };
-
-        ymaps.ready(initMap);
-
-        function initMap() {
-            map = new ymaps.Map("map", {
-                center: [53.1955, 50.1018], 
-                zoom: 12,
-                controls: ['zoomControl', 'geolocationControl']
-            });
-
-            map.events.add('click', function (e) {
-                let coords = e.get('coords');
-                
-                if (!fromCoord) {
-                    fromCoord = coords;
-                    getAddress(coords, 'from-address', 'Откуда');
-                } else if (!toCoord) {
-                    toCoord = coords;
-                    getAddress(coords, 'to-address', 'Куда');
-                    calculateRouteByCoords(); 
-                } else {
-                    fromCoord = coords;
-                    toCoord = null;
-                    document.getElementById('to-address').value = '';
-                    document.getElementById('price-display').innerText = 'Стоимость: выберите точку назначения';
-                    getAddress(coords, 'from-address', 'Откуда');
-                    if (window.routeMultiRoute) {
-                        map.geoObjects.remove(window.routeMultiRoute);
-                    }
-                }
-            });
-        }
-
-        function getAddress(coords, elementId, defaultText) {
-            ymaps.geocode(coords).then(function (res) {
-                let firstGeoObject = res.geoObjects.get(0);
-                let address = firstGeoObject ? firstGeoObject.getAddressLine() : defaultText;
-                document.getElementById(elementId).value = address;
-            });
-        }
-
-        function setTariff(tariff) {
-            currentTariff = tariff;
-            document.getElementById('tariff-eco').classList.toggle('selected', tariff === 'eco');
-            document.getElementById('tariff-comfort').classList.toggle('selected', tariff === 'comfort');
-            if (routeLengthKm > 0) calculatePrice();
-        }
-
-        function calculateRouteByCoords() {
-            if (!fromCoord || !toCoord) return;
-
-            if (window.routeMultiRoute) {
-                map.geoObjects.remove(window.routeMultiRoute);
-            }
-
-            window.routeMultiRoute = new ymaps.multiRouter.MultiRoute({
-                referencePoints: [fromCoord, toCoord],
-                params: { routingMode: 'auto' }
-            }, {
-                boundsAutoApply: true
-            });
-
-            window.routeMultiRoute.model.events.add('requestsuccess', function() {
-                let activeRoute = window.routeMultiRoute.getActiveRoute();
-                if (activeRoute) {
-                    let distanceMeters = activeRoute.properties.get("distance").value;
-                    routeLengthKm = distanceMeters / 1000;
-                    calculatePrice();
-                }
-            });
-
-            map.geoObjects.add(window.routeMultiRoute);
-        }
-
-        function calculatePrice() {
-            let ratePerKm = tariffRates[currentTariff];
-            let total = basePrice + (routeLengthKm * ratePerKm);
-            document.getElementById('price-display').innerText = `Расстояние: ${routeLengthKm.toFixed(1)} км | Итого: ${Math.round(total)} ₽`;
-        }
-
-        function sendOrder() {
-            let from = document.getElementById('from-address').value;
-            let to = document.getElementById('to-address').value;
-            
             if (!from || !to) {
-                alert('Пожалуйста, укажите адреса отправления и назначения!');
+                alert('Пожалуйста, заполните адреса откуда и куда едем');
                 return;
             }
 
-            if (routeLengthKm === 0) {
-                routeLengthKm = 5; 
-            }
-
-            let ratePerKit = tariffRates[currentTariff];
-            let total = basePrice + (routeLengthKm * ratePerKit);
-            let priceText = `Расстояние: ~${routeLengthKm.toFixed(1)} км | Итого: ${Math.round(total)} ₽`;
-
-            let paymentInfo = currentPayment === 'transfer' 
-                ? `Перевод по номеру: ${document.getElementById('driver-phone-display').value}` 
-                : `Наличные (сдача: ${document.getElementById('cash-change').value || 'без указания'})`;
-
-            let data = {
-                action: 'new_order',
+            let orderData = {
+                action: 'order_taxi',
+                phone: phone,
                 from: from,
                 to: to,
-                tariff: currentTariff === 'eco' ? 'Эконом (15 ₽/км)' : 'Комфорт (20 ₽/км)',
-                payment: paymentInfo,
-                price: priceText,
-                time: new Date().toLocaleTimeString()
+                comment: comment
             };
 
-            tg.sendData(JSON.stringify(data));
-        }
+            tg.sendData(JSON.stringify(orderData));
+        });
 
-        function sendDriverRegistration() {
-            let name = document.getElementById('driver-name').value.trim();
-            let phone = document.getElementById('driver-phone').value.trim();
-            let car = document.getElementById('driver-car').value.trim();
-            let carNumber = document.getElementById('driver-number').value.trim();
+        // Сохранение анкеты водителя
+        document.getElementById('saveDriverBtn').addEventListener('click', function() {
+            let name = document.getElementById('driverName').value;
+            let car = document.getElementById('driverCar').value;
+            let number = document.getElementById('driverNumber').value;
+            let nationality = document.getElementById('driverNationality').value;
+            let phone = document.getElementById('driverPhone').value;
 
-            let data = {
-                action: 'driver_registration',
+            if (!name || !car || !number) {
+                alert('Пожалуйста, заполните имя, модель и госномер автомобиля');
+                return;
+            }
+            if (!phone || phone.length < 5) {
+                alert('Пожалуйста, укажите контактный телефон водителя');
+                return;
+            }
+
+            let driverData = {
+                action: 'register_driver',
                 name: name,
-                phone: phone,
                 car: car,
-                carNumber: carNumber,
-                soundAlerts: audioEnabled,
-                photosCount: Object.keys(driverPhotos).length,
-                rating: 5.00
+                number: number,
+                nationality: nationality,
+                phone: phone
             };
 
-            tg.sendData(JSON.stringify(data));
+            tg.sendData(JSON.stringify(driverData));
+        });
+
+        // Функция отправки обратной связи через интерактивные стикеры-кнопки
+        function sendFeedback(type) {
+            let feedbackData = {
+                action: 'feedback',
+                text: type
+            };
+            tg.sendData(JSON.stringify(feedbackData));
         }
     </script>
 </body>
