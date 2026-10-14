@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Самара Такси - Полная версия</title>
-    <!-- Подключаем Telegram Web App API -->
+    <title>Самара Такси</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -42,7 +41,6 @@
             margin-bottom: 20px;
             font-size: 22px;
             font-weight: 700;
-            color: var(--tg-theme-text-color, #111);
         }
 
         /* Переключатель ролей */
@@ -95,7 +93,6 @@
             box-sizing: border-box;
             background: transparent;
             color: inherit;
-            transition: border-color 0.2s;
         }
 
         input:focus, select:focus {
@@ -114,7 +111,6 @@
             font-weight: 600;
             cursor: pointer;
             margin-top: 10px;
-            transition: opacity 0.2s;
         }
 
         .btn:active {
@@ -125,7 +121,7 @@
             display: none;
         }
 
-        /* Карточка информации о назначенном водителе */
+        /* Карточка информации о водителе для пассажира */
         .driver-card {
             background: #f8f9fa;
             border: 1px solid #e9ecef;
@@ -153,7 +149,7 @@
             color: #2481cc;
         }
 
-        /* Блок стикеров и быстрой обратной связи */
+        /* Блок стикеров обратной связи */
         .feedback-section {
             margin-top: 24px;
             border-top: 1px solid #eee;
@@ -183,12 +179,10 @@
             flex-direction: column;
             align-items: center;
             gap: 4px;
-            transition: transform 0.1s, background 0.2s;
         }
 
         .sticker-btn:active {
             transform: scale(0.95);
-            background: #e4e6eb;
         }
 
         .sticker-emoji {
@@ -200,14 +194,6 @@
             font-weight: 500;
             color: #333;
         }
-
-        .info-note {
-            font-size: 12px;
-            color: #888;
-            text-align: center;
-            margin-top: 15px;
-            line-height: 1.4;
-        }
     </style>
 </head>
 <body>
@@ -215,13 +201,13 @@
     <div class="container">
         <h2>🚖 Такси Самара</h2>
 
-        <!-- Переключатель роли: Пассажир / Водитель -->
+        <!-- Переключатель роли -->
         <div class="role-selector">
             <button class="role-btn active" id="passengerRoleBtn" onclick="switchRole('passenger')">Пассажир</button>
             <button class="role-btn" id="driverRoleBtn" onclick="switchRole('driver')">Водитель</button>
         </div>
 
-        <!-- ================= ИНТЕРФЕЙС ПАССАЖИРА ================= -->
+        <!-- ИНТЕРФЕЙС ПАССАЖИРА -->
         <div id="passengerView">
             <div class="form-group">
                 <label for="phone">Номер телефона</label>
@@ -239,25 +225,25 @@
             </div>
 
             <div class="form-group">
-                <label for="comment">Пожелания к поездке (необязательно)</label>
-                <input type="text" id="comment" placeholder="Детское кресло, багаж, тишина">
+                <label for="comment">Пожелания к поездке</label>
+                <input type="text" id="comment" placeholder="Детское кресло, багаж и т.д.">
             </div>
 
             <button class="btn" id="orderBtn">Заказать такси</button>
 
-            <!-- Карточка водителя для пассажира -->
+            <!-- Карточка водителя -->
             <div class="driver-card" id="driverCard">
-                <div class="driver-card-title">👨‍✈️ Информация о водителе:</div>
+                <div class="driver-card-title">👨‍✈️ Назначенный водитель:</div>
                 <div class="driver-info-row"><span>Статус:</span> <span class="driver-info-value" id="dStatus">Поиск водителя...</span></div>
                 <div class="driver-info-row"><span>Имя:</span> <span class="driver-info-value" id="dName">—</span></div>
                 <div class="driver-info-row"><span>Автомобиль:</span> <span class="driver-info-value" id="dCar">—</span></div>
                 <div class="driver-info-row"><span>Госномер:</span> <span class="driver-info-value" id="dNumber">—</span></div>
-                <div class="driver-info-row"><span>Гражданство / Регион:</span> <span class="driver-info-value" id="dNationality">—</span></div>
+                <div class="driver-info-row"><span>Национальность:</span> <span class="driver-info-value" id="dNationality">—</span></div>
             </div>
 
-            <!-- Блок стикеров обратной связи и предложений -->
+            <!-- Блок стикеров / отзывов -->
             <div class="feedback-section">
-                <div class="feedback-title">Оцените поездку или отправьте пожелание:</div>
+                <div class="feedback-title">Оцените поездку или оставьте пожелание:</div>
                 <div class="sticker-grid">
                     <button class="sticker-btn" onclick="sendFeedback('⭐️ Отличная поездка!')">
                         <span class="sticker-emoji">⭐</span>
@@ -265,7 +251,7 @@
                     </button>
                     <button class="sticker-btn" onclick="sendFeedback('💬 Чего не хватает в приложении...')">
                         <span class="sticker-emoji">💡</span>
-                        <span class="sticker-text">Идея / Улучшить</span>
+                        <span class="sticker-text">Идея</span>
                     </button>
                     <button class="sticker-btn" onclick="sendFeedback('⚠️ Сообщить о проблеме')">
                         <span class="sticker-emoji">⚠️</span>
@@ -275,7 +261,7 @@
             </div>
         </div>
 
-        <!-- ================= ИНТЕРФЕЙС ВОДИТЕЛЯ ================= -->
+        <!-- ИНТЕРФЕЙС ВОДИТЕЛЯ -->
         <div id="driverView" class="hidden">
             <h3 style="font-size: 16px; margin-top: 0; margin-bottom: 15px; color: #2481cc; text-align: center;">Регистрация водителя</h3>
             
@@ -294,8 +280,9 @@
                 <input type="text" id="driverNumber" placeholder="А123БВ 163">
             </div>
 
+            <!-- Выбор национальности -->
             <div class="form-group">
-                <label for="driverNationality">Национальность / Регион происхождения</label>
+                <label for="driverNationality">Национальность / Гражданство</label>
                 <select id="driverNationality">
                     <option value="Русский">Русский</option>
                     <option value="Татарин">Татарин</option>
@@ -309,24 +296,22 @@
                 </select>
             </div>
 
+            <!-- Номер телефона сразу с +7 -->
             <div class="form-group">
                 <label for="driverPhone">Номер телефона водителя</label>
-                <input type="tel" id="driverPhone" value="+7 " placeholder="+7...">
+                <input type="tel" id="driverPhone" value="+7 " placeholder="+7 (___) ___-__-__">
             </div>
 
-            <button class="btn" id="saveDriverBtn">Сохранить анкету и выйти на линию</button>
-            <div class="info-note">После сохранения данные поступят в систему бота для подтверждения выезда на заказы в Самаре.</div>
+            <button class="btn" id="saveDriverBtn">Сохранить анкету</button>
         </div>
 
     </div>
 
     <script>
-        // Инициализация Telegram Web App
         let tg = window.Telegram.WebApp;
         tg.expand();
         tg.ready();
 
-        // Переключение между интерфейсами пассажира и водителя
         function switchRole(role) {
             let pView = document.getElementById('passengerView');
             let dView = document.getElementById('driverView');
@@ -346,7 +331,6 @@
             }
         }
 
-        // Обработка заказа такси пассажиром
         document.getElementById('orderBtn').addEventListener('click', function() {
             let phone = document.getElementById('phone').value;
             let from = document.getElementById('from').value;
@@ -354,26 +338,23 @@
             let comment = document.getElementById('comment').value;
 
             if (!phone || phone.length < 5) {
-                alert('Пожалуйста, укажите корректный номер телефона');
+                alert('Укажите номер телефона');
                 return;
             }
             if (!from || !to) {
-                alert('Пожалуйста, заполните адреса откуда и куда едем');
+                alert('Заполните адреса');
                 return;
             }
 
-            let orderData = {
+            tg.sendData(JSON.stringify({
                 action: 'order_taxi',
                 phone: phone,
                 from: from,
                 to: to,
                 comment: comment
-            };
-
-            tg.sendData(JSON.stringify(orderData));
+            }));
         });
 
-        // Сохранение анкеты водителя
         document.getElementById('saveDriverBtn').addEventListener('click', function() {
             let name = document.getElementById('driverName').value;
             let car = document.getElementById('driverCar').value;
@@ -382,33 +363,29 @@
             let phone = document.getElementById('driverPhone').value;
 
             if (!name || !car || !number) {
-                alert('Пожалуйста, заполните имя, модель и госномер автомобиля');
+                alert('Заполните основные данные автомобиля');
                 return;
             }
             if (!phone || phone.length < 5) {
-                alert('Пожалуйста, укажите контактный телефон водителя');
+                alert('Укажите номер телефона водителя');
                 return;
             }
 
-            let driverData = {
+            tg.sendData(JSON.stringify({
                 action: 'register_driver',
                 name: name,
                 car: car,
                 number: number,
                 nationality: nationality,
                 phone: phone
-            };
-
-            tg.sendData(JSON.stringify(driverData));
+            }));
         });
 
-        // Функция отправки обратной связи через интерактивные стикеры-кнопки
         function sendFeedback(type) {
-            let feedbackData = {
+            tg.sendData(JSON.stringify({
                 action: 'feedback',
                 text: type
-            };
-            tg.sendData(JSON.stringify(feedbackData));
+            }));
         }
     </script>
 </body>
