@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Taxi_Samara</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://api-maps.yandex.ru/2.1/?apikey=ваш_api_ключ&lang=ru_RU" type="text/javascript"></script>
+    <!-- Бесплатный скрипт Яндекс.Карт -->
+    <script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU" type="text/javascript"></script>
     <style>
         :root {
             --tg-theme-bg-color: #ffffff;
@@ -96,16 +97,15 @@
 
         #map {
             width: 100%;
-            height: 180px;
+            height: 200px;
             border-radius: 12px;
             margin-bottom: 14px;
             border: 1px solid #2f3d4c;
         }
 
-        /* Блок расчета стоимости */
         .price-box {
             background: #131a22;
-            padding: 12px;
+            padding: 14px;
             border-radius: 10px;
             margin-bottom: 14px;
             text-align: center;
@@ -113,9 +113,10 @@
         }
 
         .price-value {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 700;
             color: #4ea4f5;
+            margin-top: 4px;
         }
 
         .btn {
@@ -188,35 +189,34 @@
                 <input type="tel" id="pPhone" value="+7 ">
             </div>
 
-            <!-- Выбор класса поездки (влияет на цену за км) -->
             <div class="form-group">
-                <label>Тариф:</label>
-                <select id="pTariff" onchange="calculateRoutePrice()">
-                    <option value="econom" data-rate="30">Эконом (30 ₽/км)</option>
-                    <option value="comfort" data-rate="45">Комфорт / Область (45 ₽/км)</option>
-                    <option value="cargo" data-rate="70">Грузовой / Газель (70 ₽/км)</option>
+                <label>Тариф за километр:</label>
+                <select id="pTariff" onchange="recalculatePrice()">
+                    <option value="30">Эконом (30 ₽/км)</option>
+                    <option value="45">Комфорт / Область (45 ₽/км)</option>
+                    <option value="70">Грузовой / Газель (70 ₽/км)</option>
                 </select>
             </div>
 
-            <!-- Карта -->
+            <!-- Интерактивная карта Яндекса -->
             <div class="form-group">
-                <label>Укажите точки на карте (Откуда ➔ Куда):</label>
+                <label>Кликните на карту: 1-я точка (Откуда), 2-я (Куда)</label>
                 <div id="map"></div>
             </div>
 
-            <!-- Инфоблок расчёта -->
+            <!-- Блок расчета -->
             <div class="price-box">
-                <div style="font-size: 12px; color: #879baf;">Расстояние: <span id="distText">0 км</span></div>
-                <div class="price-value" id="priceText">Итого: 0 ₽</div>
+                <div style="font-size: 13px; color: #879baf;">Расстояние по Яндексу: <span id="distText">0 км</span></div>
+                <div class="price-value" id="priceResult">0 ₽</div>
             </div>
 
             <div class="form-group">
                 <label>Откуда забрать</label>
-                <input type="text" id="pFrom" placeholder="Кликните на карту">
+                <input type="text" id="pFrom" placeholder="Выберите на карте">
             </div>
             <div class="form-group">
                 <label>Куда едем</label>
-                <input type="text" id="pTo" placeholder="Кликните на карту второй раз">
+                <input type="text" id="pTo" placeholder="Выберите на карте">
             </div>
             
             <button class="btn" id="orderBtn">Заказать такси</button>
@@ -302,58 +302,58 @@
             }
         }
 
-        let myMap, multiRoute = null;
-        let coordsFrom = null;
-        let coordsTo = null;
-        let calculatedDistanceKm = 0;
-        let calculatedPrice = 0;
+        let map, multiRoute = null;
+        let pointFrom = null;
+        let pointTo = null;
+        let routeKm = 0;
 
         if (typeof ymaps !== 'undefined') {
-            ymaps.ready(initMap);
+            ymaps.ready(initYandexMap);
         }
 
-        function initMap() {
-            myMap = new ymaps.Map("map", {
+        function initYandexMap() {
+            map = new ymaps.Map("map", {
                 center: [53.195045, 50.101983], // Самара
                 zoom: 11,
                 controls: ['zoomControl']
             });
 
-            myMap.events.add('click', function (e) {
+            map.events.add('click', function (e) {
                 let coords = e.get('coords');
 
-                if (!coordsFrom) {
-                    coordsFrom = coords;
+                if (!pointFrom) {
+                    pointFrom = coords;
                     ymaps.geocode(coords).then(res => {
                         document.getElementById('pFrom').value = res.geoObjects.get(0).getAddressLine();
                     });
-                } else if (!coordsTo) {
-                    coordsTo = coords;
+                } else if (!pointTo) {
+                    pointTo = coords;
                     ymaps.geocode(coords).then(res => {
                         document.getElementById('pTo').value = res.geoObjects.get(0).getAddressLine();
                     });
-                    // Как только есть обе точки — строим маршрут и считаем километры
-                    buildRouteAndCalculate(coordsFrom, coordsTo);
+                    // Строим маршрут по Яндексу и считаем километры
+                    createRoute(pointFrom, pointTo);
                 } else {
-                    // Сброс при третьем клике для нового выбора
-                    coordsFrom = coords;
-                    coordsTo = null;
-                    document.getElementById('pFrom').value = "Новая точка отправления...";
+                    // Сброс при новом клике
+                    pointFrom = coords;
+                    pointTo = null;
+                    document.getElementById('pFrom').value = "Новая точка...";
                     document.getElementById('pTo').value = "";
-                    if (multiRoute) myMap.geoObjects.remove(multiRoute);
+                    if (multiRoute) map.geoObjects.remove(multiRoute);
                     document.getElementById('distText').textContent = "0 км";
-                    document.getElementById('priceText').textContent = "Итого: 0 ₽";
+                    document.getElementById('priceResult').textContent = "0 ₽";
+                    routeKm = 0;
                 }
             });
         }
 
-        function buildRouteAndCalculate(pointA, pointB) {
+        function createRoute(start, end) {
             if (multiRoute) {
-                myMap.geoObjects.remove(multiRoute);
+                map.geoObjects.remove(multiRoute);
             }
 
             multiRoute = new ymaps.multiRouter.MultiRoute({
-                referencePoints: [pointA, pointB],
+                referencePoints: [start, end],
                 params: { routingMode: 'auto' }
             }, {
                 boundsAutoApply: true
@@ -362,28 +362,21 @@
             multiRoute.model.events.add('requestsuccess', function() {
                 let activeRoute = multiRoute.getActiveRoute();
                 if (activeRoute) {
-                    let distanceMeters = activeRoute.properties.get("distance").value;
-                    calculatedDistanceKm = (distanceMeters / 1000).toFixed(1);
-                    document.getElementById('distText').textContent = calculatedDistanceKm + " км";
-                    calculateRoutePrice();
+                    let meters = activeRoute.properties.get("distance").value;
+                    routeKm = (meters / 1000).toFixed(1);
+                    document.getElementById('distText').textContent = routeKm + " км";
+                    recalculatePrice();
                 }
             });
 
-            myMap.geoObjects.add(multiRoute);
+            map.geoObjects.add(multiRoute);
         }
 
-        function calculateRoutePrice() {
-            let tariffSelect = document.getElementById('pTariff');
-            let selectedOption = tariffSelect.options[tariffSelect.selectedIndex];
-            let ratePerKm = parseFloat(selectedOption.getAttribute('data-rate')) || 30;
-
-            // Базовая посадка (например, 100 рублей) + стоимость за каждый километр
-            let basePrice = 100;
-            calculatedPrice = Math.round(basePrice + (calculatedDistanceKm * ratePerKm));
-
-            if (calculatedDistanceKm > 0) {
-                document.getElementById('priceText').textContent = "Итого: " + calculatedPrice + " ₽";
-            }
+        function recalculatePrice() {
+            let rate = parseFloat(document.getElementById('pTariff').value) || 30;
+            let basePrice = 100; // фиксированная посадка
+            let total = Math.round(basePrice + (routeKm * rate));
+            document.getElementById('priceResult').textContent = total + " ₽";
         }
 
         function showPhoto(event) {
@@ -407,9 +400,10 @@
             let tariffName = document.getElementById('pTariff').options[document.getElementById('pTariff').selectedIndex].text;
             let from = document.getElementById('pFrom').value;
             let to = document.getElementById('pTo').value;
+            let price = document.getElementById('priceResult').textContent;
 
-            if (!phone || phone.length < 5 || !from || !to || calculatedDistanceKm === 0) {
-                alert('Укажите точки «Откуда» и «Куда» на карте!');
+            if (!phone || phone.length < 5 || !from || !to || routeKm === 0) {
+                alert('Укажите две точки на карте (Откуда и Куда)!');
                 return;
             }
 
@@ -417,8 +411,8 @@
                 action: 'order_taxi',
                 phone: phone,
                 tariff: tariffName,
-                distance: calculatedDistanceKm + " км",
-                price: calculatedPrice + " ₽",
+                distance: routeKm + " км",
+                price: price,
                 from: from,
                 to: to
             };
