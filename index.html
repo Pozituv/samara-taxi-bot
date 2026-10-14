@@ -14,6 +14,7 @@
             --card-bg: var(--tg-theme-secondary-bg-color, #2b2f36);
             --text-color: var(--tg-theme-text-color, #ffffff);
             --hint-color: var(--tg-theme-hint-color, #999999);
+            --success-color: #4cd964;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -69,6 +70,45 @@
         }
         input:focus { border-color: var(--primary-color); background: #23262b; }
         
+        /* Блок звуковых оповещений */
+        .sound-toggle-box {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            border: 1px solid transparent;
+            transition: 0.3s;
+        }
+        .sound-toggle-box.active {
+            border-color: var(--success-color);
+            background: rgba(76, 217, 100, 0.08);
+        }
+        .sound-info { display: flex; flex-direction: column; gap: 2px; }
+        .sound-title { font-size: 14px; font-weight: bold; }
+        .sound-desc { font-size: 12px; color: var(--hint-color); }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 26px;
+            flex-shrink: 0;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #555; transition: .3s; border-radius: 26px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px;
+            background-color: white; transition: .3s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--success-color); }
+        input:checked + .slider:before { transform: translateX(22px); }
+
         .tariffs, .payment-options { display: flex; gap: 10px; margin-bottom: 16px; }
         .tariff-card, .pay-card {
             flex: 1;
@@ -120,7 +160,6 @@
             margin-bottom: 10px;
         }
 
-        /* Стили для встроенной камеры */
         .camera-box {
             width: 100%;
             height: 280px;
@@ -206,7 +245,7 @@
         <button class="main-btn" onclick="sendOrder()">Заказать такси</button>
     </div>
 
-    <!-- РЕЖИМ ВОДИТЕЛЯ (ПОШАГОВЫЙ С ЖИВОЙ КАМЕРОЙ) -->
+    <!-- РЕЖИМ ВОДИТЕЛЯ -->
     <div id="driver-section" class="section">
         <h2>Регистрация водителя</h2>
         <div class="step-indicator" id="step-indicator">Шаг 1 из 10</div>
@@ -226,20 +265,32 @@
             </div>
             <div class="form-group">
                 <label>Государственный номер:</label>
-                <input type="text" id="driver-number" placeholder="А123ВС63">
+                <input type="text" id="driver-number" placeholder="А123ВС63" oninput="this.value = this.value.toUpperCase()">
             </div>
+
+            <!-- ВКЛЮЧЕНИЕ ЗВУКОВЫХ ОПОВЕЩЕНИЙ -->
+            <div class="sound-toggle-box" id="sound-box">
+                <div class="sound-info">
+                    <span class="sound-title">🔊 Звуковые оповещения</span>
+                    <span class="sound-desc">Обязательно для получения новых заказов</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="driver-sound-toggle" onchange="toggleSoundAlerts(this)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
             <button class="main-btn" onclick="nextStep(2)">Далее →</button>
         </div>
 
         <!-- ШАГИ КАМЕРЫ (2 - 10) -->
-        <!-- Шаблон шага камеры создается универсальным блоком -->
         <div class="step-container" id="step-2">
             <label id="cam-label-2">Селфи водителя (лицо):</label>
             <div class="camera-box">
                 <video id="video-2" autoplay playsinline></video>
                 <canvas id="canvas-2"></canvas>
             </div>
-            <button class="main-btn" onclick="takePhoto(2, 'user')">📸 Сделать снимок</button>
+            <button class="main-btn" onclick="takePhoto(2)">📸 Сделать снимок</button>
             <div id="status-2" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
             <button class="main-btn hidden" id="next-btn-2" onclick="nextStep(3)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
         </div>
@@ -250,7 +301,7 @@
                 <video id="video-3" autoplay playsinline></video>
                 <canvas id="canvas-3"></canvas>
             </div>
-            <button class="main-btn" onclick="takePhoto(3, 'environment')">📸 Сделать снимок</button>
+            <button class="main-btn" onclick="takePhoto(3)">📸 Сделать снимок</button>
             <div id="status-3" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
             <button class="main-btn hidden" id="next-btn-3" onclick="nextStep(4)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
         </div>
@@ -261,7 +312,7 @@
                 <video id="video-4" autoplay playsinline></video>
                 <canvas id="canvas-4"></canvas>
             </div>
-            <button class="main-btn" onclick="takePhoto(4, 'environment')">📸 Сделать снимок</button>
+            <button class="main-btn" onclick="takePhoto(4)">📸 Сделать снимок</button>
             <div id="status-4" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
             <button class="main-btn hidden" id="next-btn-4" onclick="nextStep(5)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
         </div>
@@ -272,7 +323,7 @@
                 <video id="video-5" autoplay playsinline></video>
                 <canvas id="canvas-5"></canvas>
             </div>
-            <button class="main-btn" onclick="takePhoto(5, 'environment')">📸 Сделать снимок</button>
+            <button class="main-btn" onclick="takePhoto(5)">📸 Сделать снимок</button>
             <div id="status-5" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
             <button class="main-btn hidden" id="next-btn-5" onclick="nextStep(6)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
         </div>
@@ -283,7 +334,7 @@
                 <video id="video-6" autoplay playsinline></video>
                 <canvas id="canvas-6"></canvas>
             </div>
-            <button class="main-btn" onclick="takePhoto(6, 'environment')">📸 Сделать снимок</button>
+            <button class="main-btn" onclick="takePhoto(6)">📸 Сделать снимок</button>
             <div id="status-6" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
             <button class="main-btn hidden" id="next-btn-6" onclick="nextStep(7)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
         </div>
@@ -294,7 +345,7 @@
                 <video id="video-7" autoplay playsinline></video>
                 <canvas id="canvas-7"></canvas>
             </div>
-            <button class="main-btn" onclick="takePhoto(7, 'environment')">📸 Сделать снимок</button>
+            <button class="main-btn" onclick="takePhoto(7)">📸 Сделать снимок</button>
             <div id="status-7" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
             <button class="main-btn hidden" id="next-btn-7" onclick="nextStep(8)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
         </div>
@@ -305,7 +356,7 @@
                 <video id="video-8" autoplay playsinline></video>
                 <canvas id="canvas-8"></canvas>
             </div>
-            <button class="main-btn" onclick="takePhoto(8, 'environment')">📸 Сделать снимок</button>
+            <button class="main-btn" onclick="takePhoto(8)">📸 Сделать снимок</button>
             <div id="status-8" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
             <button class="main-btn hidden" id="next-btn-8" onclick="nextStep(9)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
         </div>
@@ -316,7 +367,7 @@
                 <video id="video-9" autoplay playsinline></video>
                 <canvas id="canvas-9"></canvas>
             </div>
-            <button class="main-btn" onclick="takePhoto(9, 'environment')">📸 Сделать снимок</button>
+            <button class="main-btn" onclick="takePhoto(9)">📸 Сделать снимок</button>
             <div id="status-9" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
             <button class="main-btn hidden" id="next-btn-9" onclick="nextStep(10)" style="background: #4cd964; margin-top: 8px;">Далее →</button>
         </div>
@@ -327,7 +378,7 @@
                 <video id="video-10" autoplay playsinline></video>
                 <canvas id="canvas-10"></canvas>
             </div>
-            <button class="main-btn" onclick="takePhoto(10, 'environment')">📸 Сделать снимок</button>
+            <button class="main-btn" onclick="takePhoto(10)">📸 Сделать снимок</button>
             <div id="status-10" style="text-align: center; color: var(--hint-color); margin-top: 8px;">Фото не сделано</div>
             <button class="main-btn hidden" id="next-btn-10" onclick="sendDriverRegistration()" style="background: #4cd964; margin-top: 8px;">Завершить регистрацию 🚀</button>
         </div>
@@ -337,6 +388,10 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
+
+        let currentActiveStream = null;
+        let driverPhotos = {};
+        let audioEnabled = false;
 
         document.querySelectorAll('input').forEach(input => {
             input.addEventListener('touchstart', (e) => { e.stopPropagation(); });
@@ -352,6 +407,7 @@
         updateDateTime();
 
         function switchTab(role) {
+            stopCurrentCamera();
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             if (role === 'passenger') {
@@ -360,52 +416,100 @@
             } else {
                 document.querySelectorAll('.tab')[1].classList.add('active');
                 document.getElementById('driver-section').classList.add('active');
-                startCamera(2, 'user'); // Запускаем камеру для селфи при переходе на шаг 2
+                if (currentStep > 1) {
+                    startCamera(currentStep, (currentStep === 2) ? 'user' : 'environment');
+                }
+            }
+        }
+
+        // Воспроизведение тестового звукового сигнала
+        function playTestBeep() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime); // Тон 880Hz (ля)
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.2); // Звук длится 0.2 сек
+            } catch (e) {
+                console.warn('Не удалось воспроизвести тестовый звук:', e);
+            }
+        }
+
+        function toggleSoundAlerts(checkbox) {
+            const box = document.getElementById('sound-box');
+            audioEnabled = checkbox.checked;
+            box.classList.toggle('active', audioEnabled);
+            
+            if (audioEnabled) {
+                playTestBeep();
             }
         }
 
         let currentStep = 1;
         function nextStep(step) {
             if (step === 2) {
-                let name = document.getElementById('driver-name').value;
-                let phone = document.getElementById('driver-phone').value;
-                let car = document.getElementById('driver-car').value;
-                let carNumber = document.getElementById('driver-number').value;
+                let name = document.getElementById('driver-name').value.trim();
+                let phone = document.getElementById('driver-phone').value.trim();
+                let car = document.getElementById('driver-car').value.trim();
+                let carNumber = document.getElementById('driver-number').value.trim();
+                
                 if (!name || !phone || !car || !carNumber) {
                     alert('Пожалуйста, заполните все текстовые поля!');
                     return;
                 }
+
+                if (!audioEnabled) {
+                    alert('Для работы водителем необходимо включить звуковые оповещения!');
+                    return;
+                }
             }
+
+            stopCurrentCamera();
 
             document.querySelectorAll('.step-container').forEach(el => el.classList.remove('active'));
             document.getElementById(`step-${step}`).classList.add('active');
             document.getElementById('step-indicator').innerText = `Шаг ${step} из 10`;
             currentStep = step;
 
-            // Запускаем камеру для текущего шага
             let facing = (step === 2) ? 'user' : 'environment';
             startCamera(step, facing);
         }
 
-        // Функция запуска прямой камеры в браузере
-        async function startCamera(step, facingMode) {
-            try {
-                let video = document.getElementById(`video-${step}`);
-                if (video.srcObject) return; // Если уже запущено
-                
-                let stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: facingMode },
-                    audio: false
-                });
-                video.srcObject = stream;
-            } catch (err) {
-                console.error("Ошибка доступа к камере: ", err);
-                alert("Не удалось получить доступ к камере. Убедитесь, что разрешили её использование в Telegram.");
+        function stopCurrentCamera() {
+            if (currentActiveStream) {
+                currentActiveStream.getTracks().forEach(track => track.stop());
+                currentActiveStream = null;
             }
         }
 
-        // Функция захвата фото с видеопотока
-        function takePhoto(step, facingMode) {
+        async function startCamera(step, facingMode) {
+            stopCurrentCamera();
+            try {
+                let video = document.getElementById(`video-${step}`);
+                let canvas = document.getElementById(`canvas-${step}`);
+                
+                video.classList.remove('hidden');
+                canvas.classList.add('hidden');
+
+                let stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+                    audio: false
+                });
+                
+                currentActiveStream = stream;
+                video.srcObject = stream;
+            } catch (err) {
+                console.error("Ошибка доступа к камере: ", err);
+                alert("Не удалось получить доступ к камере. Убедитесь, что разрешили доступ в настройках.");
+            }
+        }
+
+        function takePhoto(step) {
             let video = document.getElementById(`video-${step}`);
             let canvas = document.getElementById(`canvas-${step}`);
             let context = canvas.getContext('2d');
@@ -414,13 +518,10 @@
             canvas.height = video.videoHeight || 480;
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            // Останавливаем поток камеры для этого шага
-            let stream = video.srcObject;
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
+            driverPhotos[`step_${step}`] = canvas.toDataURL('image/jpeg', 0.6);
 
-            // Прячем видео, показываем снимок на canvas
+            stopCurrentCamera();
+
             video.classList.add('hidden');
             canvas.classList.remove('hidden');
 
@@ -570,17 +671,19 @@
         }
 
         function sendDriverRegistration() {
-            let name = document.getElementById('driver-name').value;
-            let phone = document.getElementById('driver-phone').value;
-            let car = document.getElementById('driver-car'].value || document.getElementById('driver-car').value;
-            let carNumber = document.getElementById('driver-number').value;
+            let name = document.getElementById('driver-name').value.trim();
+            let phone = document.getElementById('driver-phone').value.trim();
+            let car = document.getElementById('driver-car').value.trim();
+            let carNumber = document.getElementById('driver-number').value.trim();
 
             let data = {
                 action: 'driver_registration',
                 name: name,
                 phone: phone,
-                car: document.getElementById('driver-car').value,
+                car: car,
                 carNumber: carNumber,
+                soundAlerts: audioEnabled,
+                photosCount: Object.keys(driverPhotos).length,
                 rating: 5.00
             };
 
