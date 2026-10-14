@@ -131,30 +131,38 @@
             color: #4ea4f5;
         }
 
-        /* Стили для блока камеры / загрузки фото */
-        .camera-box {
-            border: 2px dashed #2f3d4c;
-            border-radius: 10px;
-            padding: 15px;
-            text-align: center;
-            background: #18222d;
-            cursor: pointer;
+        /* Кнопка-обертка для вызова камеры без черного экрана */
+        .camera-btn-wrap {
             position: relative;
+            overflow: hidden;
+            display: block;
+            width: 100%;
+            background-color: var(--tg-theme-button-color, #2481cc);
+            color: #fff;
+            text-align: center;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
         }
 
-        .camera-box input[type="file"] {
+        .camera-btn-wrap input[type="file"] {
             position: absolute;
             top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            right: 0;
+            min-width: 100%;
+            min-height: 100%;
+            font-size: 100px;
+            text-align: right;
             opacity: 0;
             cursor: pointer;
         }
 
-        .preview-img {
+        .preview-thumb {
             max-width: 100%;
-            max-height: 150px;
+            max-height: 120px;
             border-radius: 8px;
             margin-top: 10px;
             display: none;
@@ -207,6 +215,7 @@
                 <input type="text" id="dName" placeholder="Иванов Иван Иванович">
             </div>
 
+            <!-- Номер телефона сразу с +7 -->
             <div class="form-group">
                 <label>Номер телефона (для переводов)</label>
                 <input type="tel" id="dPhone" value="+7 ">
@@ -222,7 +231,7 @@
                 <input type="text" id="dNumber" placeholder="А123ВС63">
             </div>
 
-            <!-- ВЫБОР НАЦИОНАЛЬНОСТИ -->
+            <!-- Выбор национальности -->
             <div class="form-group">
                 <label>Национальность / Гражданство</label>
                 <select id="dNat">
@@ -238,16 +247,17 @@
                 </select>
             </div>
 
-            <!-- РАБОТАЮЩАЯ КАМЕРА (Загрузка фото прав) -->
+            <!-- Блок камеры без черного экрана -->
             <div class="form-group">
-                <label>Права — Лицевая сторона:</label>
-                <div class="camera-box">
-                    <span>📷 Нажмите, чтобы открыть камеру</span>
-                    <input type="file" accept="image/*" capture="environment" id="licensePhoto" onchange="previewFile(event)">
+                <label>Селфи водителя / Фото прав:</label>
+                <div class="camera-btn-wrap">
+                    📸 Сделать снимок
+                    <input type="file" accept="image/*" capture="environment" id="driverPhoto" onchange="showPhoto(event)">
                 </div>
                 <div style="text-align: center;">
-                    <img id="photoPreview" class="preview-img" alt="Предпросмотр фото">
+                    <img id="photoPreview" class="preview-thumb" alt="Превью фото">
                 </div>
+                <div id="photoStatus" style="font-size: 12px; color: #879baf; text-align: center; margin-top: 5px;">Фото не сделано</div>
             </div>
 
             <button class="btn" id="saveDriverBtn">Сохранить анкету</button>
@@ -279,15 +289,17 @@
             }
         }
 
-        // Функция предпросмотра фото с камеры
-        function previewFile(event) {
+        function showPhoto(event) {
             let file = event.target.files[0];
             let preview = document.getElementById('photoPreview');
+            let status = document.getElementById('photoStatus');
             if (file) {
                 let reader = new FileReader();
                 reader.onload = function(e) {
                     preview.src = e.target.result;
                     preview.style.display = 'inline-block';
+                    status.textContent = 'Фото успешно прикреплено!';
+                    status.style.color = '#4ea4f5';
                 }
                 reader.readAsDataURL(file);
             }
@@ -317,14 +329,13 @@
             let car = document.getElementById('dCar').value;
             let number = document.getElementById('dNumber').value;
             let nationality = document.getElementById('dNat').value;
-            let photoInput = document.getElementById('licensePhoto');
+            let photoInput = document.getElementById('driverPhoto');
 
             if (!name || !car || !number || phone.length < 5) {
                 alert('Пожалуйста, заполните все данные водителя!');
                 return;
             }
 
-            // Проверяем, сделано ли фото
             let hasPhoto = photoInput.files && photoInput.files.length > 0;
 
             tg.sendData(JSON.stringify({
